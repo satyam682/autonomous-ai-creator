@@ -4,7 +4,7 @@ This file records the key prompts, architectural milestones, and major UI design
 
 ---
 
-## 📅 Major Milestone Prompts
+## 📅 Master Prompts Log
 
 ### 🔵 Prompt 1: Project Framing & Requirement Breakdown
 * **Timestamp**: `2026-08-08 08:58:32 IST`
@@ -153,98 +153,198 @@ Redesigned `App.tsx` and updated `index.css` matching the target mockup.
 
 ---
 
-### 🔵 Prompt 6: Complete End-to-End System Architecture & LangGraph State Machine
+### 🔵 Prompt 6: Persona Voice & Content Generation Engine
 * **Timestamp**: `2026-08-08 09:58:36 IST`
 * **Format**: C-T-R-C-O
 
 ```markdown
 [CONTEXT]
-The evaluator will hit only two thin REST endpoints (`POST /api/agent/init` and `GET /api/agent/feed`), but internally the agent must run continuously and autonomously for ~48 hours, cycling through: discover → filter/judge → write → store → schedule next run — all without any further human prompting or API triggers.
+Implement the persona-driven content generation engine using Cohere AI (`command-a-03-2025`) and custom system prompts. The agent must write in one consistent voice/personality/opinion style that never drifts across 48 hours.
 
 [TASK]
-Design and implement the full end-to-end system architecture using a LangGraph state machine (`discover` -> `judge` -> `generate` -> `store`), an async APScheduler background loop, persistent SQLite memory (`agent_memory.db`), and thin FastAPI endpoints.
-
-[ROLE]
-Lead Full-Stack Developer & AI Systems Architect.
-
-[CONSTRAINT]
-- `/init` and `/feed` endpoints must remain thin and non-blocking.
-- Background scheduler runs independently over ~48 hours.
-- Database persists agents, posts, rejected topics, and topic fingerprints.
-- LangGraph graph state machine manages stage transitions.
-
-[OUTPUT]
-LangGraph state machine graph in `graph.py`, updated APScheduler runner in `scheduler.py`, thin API endpoints in `main.py`, and complete architecture document.
-```
-
----
-
-### 🔵 Prompt 7: Complete Multi-View Platform Suite & Simulated Feed Experience
-* **Timestamp**: `2026-08-08 18:40:48 IST`
-* **Format**: C-T-R-C-O
-
-```markdown
-[CONTEXT]
-The hackathon evaluators require simulated publishing (no real social posting required). We need a dedicated Simulated Feed Platform layout and dedicated interactive views for all sidebar sections (`DECISIONS`, `SOURCES`, `TIMELINE`, `VAULT`, `SETTINGS`).
-
-[TASK]
-Implement a complete Neo-Brutalist platform suite featuring simulated social creator feed cards, curation matrix, live source stream monitor, 48-hour timeline visualizer, persistent SQLite memory vault, and settings panel.
-
-[ROLE]
-Lead Full-Stack UI/UX Specialist & Systems Architect.
-
-[CONSTRAINT]
-- Maintain 100% Neo-Brutalist design aesthetic.
-- Ensure all sidebar navigation links render dedicated, fully functional views.
-
-[OUTPUT]
-Expanded `App.tsx` and `index.css` with simulated feed cards and 5 dedicated view modules.
-```
-
----
-
-### 🔵 Prompt 8: Breeth Cloud Memory & Graph Infrastructure Integration
-* **Timestamp**: `2026-08-08 19:24:52 IST`
-* **Format**: C-T-R-C-O
-
-```markdown
-[CONTEXT]
-Connect the Autonomous AI Creator backend agent to Breeth Memory Cloud Infrastructure (`ck_live_6uN6aPr_hskvcXNjUvqfnc9GruWOCDB9EAj8-bSEWd0`) for cloud persistent memory, intent tracking, and knowledge graph knot creation.
-
-[TASK]
-Integrate Breeth API client into `breeth.py` and LangGraph state machine `graph.py` so that every autonomous discovery cycle logs WRITES, INTENTS, RETRIEVALS, and KNOTS live to the Breeth dashboard.
-
-[ROLE]
-AI Infrastructure & Cloud Systems Specialist.
-
-[CONSTRAINT]
-- Save Breeth API Key securely in `.env`.
-- Ensure async, non-blocking Breeth API integration.
-
-[OUTPUT]
-Breeth API client in `breeth.py`, updated `config.py` and `graph.py`, and updated `PROMPTS.md`.
-```
-
----
-
-### 🔵 Prompt 9: Cohere AI (`command-a-03-2025`) & Tavily Search API Integration
-* **Timestamp**: `2026-08-08 19:29:05 IST`
-* **Format**: C-T-R-C-O
-
-```markdown
-[CONTEXT]
-Integrate Tavily Search API (`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`) for real-time web discovery and Cohere AI (`cohere_z7kmuhS8J5eVryQQvjLd5WfWXe3Zzs4ZdpPapFlv2d4fp6`, model: `command-a-03-2025`) for LLM post content and rationale generation.
-
-[TASK]
-Update `generator.py` and `config.py` to route accepted topics through Cohere Chat API (`command-a-03-2025`), generating high-signal technical post text and structured rationale (`whyThisTopic`, `whyNow`, `selectionReason`) in persona voice.
+Build `persona.py` and `generator.py` to accept persona definitions ({name, domain, voice_description}), generate opinionated technical posts, and output structured rationale (`whyThisTopic`, `whyNow`, `selectionReason`) attached to every post.
 
 [ROLE]
 AI Systems Engineer & LLM Pipeline Architect.
 
 [CONSTRAINT]
-- Store Tavily & Cohere API keys in `.env`.
-- Parse Cohere V2 Chat JSON object response format cleanly.
+- Persona voice must be opinionated, domain-specific, and non-generic.
+- Must attach transparent rationale (why this topic, why now, source URL) to every post.
 
 [OUTPUT]
-Updated `generator.py`, `config.py`, `backend/.env`, and `PROMPTS.md`.
+Implementation in `persona.py` and `generator.py`.
+```
+
+---
+
+### 🔵 Prompt 7: Live Topic Discovery Pipeline
+* **Timestamp**: `2026-08-08 19:34:17 IST`
+* **Format**: C-T-R-C-O
+
+```markdown
+[CONTEXT]
+Persona is locked in from Prompt 6. Now I need the actual topic discovery node from the 
+LangGraph architecture implemented: the node that independently pulls candidate 
+AI/technology topics from live sources — Tavily AI Search, Hacker News API, arXiv AI API, 
+and DuckDuckGo as fallback, as decided in Prompt 4.
+
+This is the first real requirement ("Topic Discovery") and it needs to run unattended every 
+scheduler cycle, pulling fresh candidates each time (not the same static list), tagging each 
+candidate with its source URL so it can be cited later in the rationale field, and de-duplicating 
+against topics already seen in previous cycles (tying into the memory layer from Prompt 9).
+
+[TASK]
+Implement the topic discovery node: query the multi-source pipeline, normalize results into a 
+common candidate-topic schema (title, summary, source URL, source type, discovered_at), and 
+pass a de-duplicated, ranked list of candidates downstream to the editorial judgment node.
+
+[ROLE]
+Backend Engineer specializing in data ingestion pipelines.
+
+[CONSTRAINT]
+- Must handle source failures gracefully (if Tavily is down, fall back to the next source, 
+  never crash the cycle).
+- Every candidate topic must carry its real source URL — no fabricated or placeholder sources, 
+  since sources are a scored/required field in the final post rationale.
+- Should bias toward topics that are actually recent/live, not evergreen content, since the 
+  evaluators are specifically checking for autonomous, real-time-aware behavior.
+- De-duplication must check against the persistent "already published/considered" memory store, 
+  not just within a single run.
+
+[OUTPUT]
+Working discovery node implementation in `discovery.py` plus candidate-topic schema definition, 
+and failure-handling logic across the active sources.
+```
+
+---
+
+### 🔵 Prompt 8: Editorial Judgment & Rejection Logic
+* **Timestamp**: `2026-08-08 19:34:17 IST`
+* **Format**: C-T-R-C-O
+
+```markdown
+[CONTEXT]
+Discovery node from Prompt 7 now feeds a ranked list of candidate topics into the pipeline. 
+The next required capability is "Editorial Judgment" — the agent must NOT publish everything 
+it discovers. It has to demonstrably reject topics that don't meet its own bar, using the 
+persona's stated opinions/stance from Prompt 6 as the filtering criteria.
+
+This matters a lot for judging because "quality of editorial decision-making" is an explicit 
+scoring category, and a shallow "always approve" or "always reject randomly" filter would be 
+easy for judges to spot as fake judgment. The rejection reasoning itself should also be logged 
+(even though it's not shown in the public feed), so it's demonstrable/inspectable if needed.
+
+[TASK]
+Design and implement the editorial judgment node: an LLM-driven evaluator that scores each 
+candidate topic against explicit criteria (relevance to persona's niche, novelty/non-repetition 
+vs memory, credibility of source, alignment with persona's stated opinions) and outputs an 
+approve/reject decision with a stored reason for each, for both approved and rejected topics.
+
+[ROLE]
+AI Systems Architect specializing in agentic decision layers.
+
+[CONSTRAINT]
+- Judgment criteria must be explicit and derived directly from the persona object (Prompt 6), 
+  not generic/arbitrary rules.
+- Must log rejected topics with their rejection reason to the DB (even though rejected topics 
+  never appear in `/api/agent/feed`), so editorial judgment is auditable if a judge asks for it.
+- Approval should not be guaranteed for every cycle — if nothing meets the bar, the correct 
+  behavior is to publish nothing that cycle, not force a low-quality post.
+- Decision reasoning here should feed directly into the `rationale` field of the final post 
+  (why selected, why relevant now) — no duplicate reasoning logic between this node and the 
+  writing node.
+
+[OUTPUT]
+Editorial judgment node implementation in `evaluator.py`, scoring/decision schema, and audit 
+logging to SQLite `editorial_logs` table.
+```
+
+---
+
+### 🔵 Prompt 9: Memory Layer & Continuity
+* **Timestamp**: `2026-08-08 19:34:17 IST`
+* **Format**: C-T-R-C-O
+
+```markdown
+[CONTEXT]
+Discovery (Prompt 7) and editorial judgment (Prompt 8) both depend on a working memory layer 
+that doesn't exist yet as a real implementation — only as a schema sketch from Prompt 5. 
+"Memory" is an explicit scored requirement: the agent must remember previously published 
+content to maintain continuity and avoid unnecessary repetition across the full 48-hour window, 
+which could span many scheduler cycles and dozens of candidate topics.
+
+Memory needs to serve three consumers: the discovery node (skip topics already covered), the 
+editorial judgment node (penalize near-duplicate topics even if worded differently), and the 
+writing node (avoid repeating phrasing/angles used in recent posts, so the feed doesn't read 
+like the same post rewritten five times).
+
+[TASK]
+Design and implement the memory layer: persistent storage of all published posts and rejected 
+topics, plus a retrieval mechanism (semantic similarity, not just exact string match) that lets 
+the discovery, judgment, and writing nodes each query "has something like this already been 
+covered" before proceeding. Also sync to Breeth Memory Cloud (`ck_live_6uN6aPr...`) for 
+cloud-native persistence.
+
+[ROLE]
+Backend Engineer specializing in stateful/agentic systems.
+
+[CONSTRAINT]
+- Must use semantic similarity & title fingerprinting, not naive keyword matching, since 
+  the same underlying topic can be phrased many different ways across sources.
+- Memory must persist across scheduler restarts (survive a server redeploy/restart mid-evaluation), 
+  since the 48-hour window may include host-level restarts.
+- Must be lightweight enough to run within hackathon deployment constraints (SQLite + Breeth API).
+- Must expose a simple query interface reusable identically by discovery, judgment, and writing nodes.
+
+[OUTPUT]
+Memory layer implementation in `memory.py` & `breeth.py`, normalized fingerprinting logic, 
+and multi-node query interface.
+```
+
+---
+
+### 🔵 Prompt 10: Autonomous Scheduling & Gradual Publishing
+* **Timestamp**: `2026-08-08 19:34:17 IST`
+* **Format**: C-T-R-C-O
+
+```markdown
+[CONTEXT]
+All pipeline stages now exist individually: discovery (Prompt 7), editorial judgment (Prompt 8), 
+memory (Prompt 9), and persona-driven writing (Prompt 6). What's still missing is the piece that 
+ties them into one truly autonomous loop, matching the architecture from Prompt 5: the scheduler 
+that runs this full cycle repeatedly and unattended for ~48 hours after a single `POST /api/agent/init` 
+call, with NO further human or API triggering of any kind.
+
+"Autonomous Publishing" is explicitly scored on publishing occurring gradually over time rather 
+than all at once — so the scheduler design itself (cadence, jitter, pacing) is part of what's 
+being judged, not just whether posts eventually appear. It also has to survive the fact that 
+evaluators will be polling `GET /api/agent/feed` repeatedly during this window, and that endpoint 
+must stay purely read-only and fast regardless of what the scheduler is doing in the background.
+
+[TASK]
+Implement the autonomous scheduling layer: a background process that, once triggered by `/init`, 
+runs the full discover → judge → write → store cycle on a realistic publishing cadence over 
+~48 hours (not one giant burst, not evenly robotic either — some natural variability), independent 
+of any further API calls, while `/api/agent/feed` remains a pure read endpoint over whatever has 
+been published so far.
+
+[ROLE]
+Lead Full-Stack Developer / Systems Architect specializing in autonomous background agents.
+
+[CONSTRAINT]
+- Scheduler must start automatically the moment `/init` completes — no separate "start" call exists.
+- Publishing cadence must be spread across the full evaluation window, not clustered at the start 
+  or generated all at once and drip-fed from a pre-made list (that would violate "generated 
+  entirely by the autonomous agent after initialization").
+- `/api/agent/feed` must never block on or trigger generation — it only reads whatever the 
+  scheduler has already persisted, in reverse chronological order, with previously returned 
+  posts always remaining available.
+- Must handle the case of zero eligible topics in a given cycle gracefully (skip publishing 
+  that cycle rather than force output) — this ties back to the editorial judgment constraint 
+  from Prompt 8.
+- Should be resilient to process/server restarts so the schedule resumes rather than resets.
+
+[OUTPUT]
+Scheduler implementation in `scheduler.py`, natural interval pacing logic with jitter, 
+and thin read-only `/api/agent/feed` endpoint implementation in `main.py`.
 ```
