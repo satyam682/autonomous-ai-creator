@@ -108,10 +108,22 @@ export function App() {
   // Settings State
   const [publishInterval, setPublishInterval] = useState<number>(180);
   const [customVoice, setCustomVoice] = useState<string>('');
-
-  // Clock state
   const [timeStr, setTimeStr] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
+
+  const [sliderIndex, setSliderIndex] = useState<number>(0);
+
+  const handlePrevPersona = () => {
+    const nextIdx = sliderIndex > 0 ? sliderIndex - 1 : PERSONA_LIST.length - 1;
+    setSliderIndex(nextIdx);
+    handleInitAgent(PERSONA_LIST[nextIdx]);
+  };
+
+  const handleNextPersona = () => {
+    const nextIdx = sliderIndex < PERSONA_LIST.length - 1 ? sliderIndex + 1 : 0;
+    setSliderIndex(nextIdx);
+    handleInitAgent(PERSONA_LIST[nextIdx]);
+  };
 
   useEffect(() => {
     updateClock();
@@ -451,14 +463,14 @@ export function App() {
                   <span>👤</span> SELECT / SWITCH ACTIVE PERSONA ARCHETYPE
                 </div>
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.5rem' }}><ChevronLeft size={16} /></button>
-                  <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.5rem' }}><ChevronRight size={16} /></button>
+                  <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.5rem' }} onClick={handlePrevPersona}><ChevronLeft size={16} /></button>
+                  <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.5rem' }} onClick={handleNextPersona}><ChevronRight size={16} /></button>
                 </div>
               </div>
 
               {/* Cards Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                {PERSONA_LIST.map((p) => {
+                {PERSONA_LIST.map((p, idx) => {
                   const isActive = currentPersona?.domain === p.domain || currentPersona?.name === p.name;
                   return (
                     <div 
@@ -472,7 +484,7 @@ export function App() {
                         boxShadow: isActive ? '5px 5px 0px #000' : '3px 3px 0px #000',
                         transition: 'all 0.15s ease'
                       }}
-                      onClick={() => handleInitAgent(p)}
+                      onClick={() => { setSliderIndex(idx); handleInitAgent(p); }}
                     >
                       <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
                         <img 
@@ -533,7 +545,7 @@ export function App() {
             </div>
 
             {/* MAIN FEED AREA & RIGHT PANEL GRID */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.2fr) minmax(0, 1fr)', gap: '1.5rem' }}>
+            <div className="nova-grid-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.2fr) minmax(0, 1fr)', gap: '1.5rem' }}>
               
               {/* LEFT MAIN AREA */}
               <div>
