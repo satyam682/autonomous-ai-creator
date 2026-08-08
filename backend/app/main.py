@@ -3,6 +3,9 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pathlib import Path
 from app.config import settings
 from app.models.schemas import (
     InitAgentRequest, InitAgentResponse, FeedResponse, 
@@ -184,11 +187,32 @@ async def simulate_48h(agentId: Optional[str] = Query(None)):
 
     return {"status": "SUCCESS", "postsGenerated": len(generated_posts)}
 
-@app.get("/")
-def read_root():
+@app.get("/api/health")
+def health_check():
     return {
         "name": settings.PROJECT_NAME,
         "status": "ONLINE",
         "docs": "/docs",
         "endpoints": ["POST /api/agent/init", "GET /api/agent/feed?agentId=..."]
     }
+
+# Mount React Frontend static build files if available
+frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend_or_spa(full_path: str):
+        file_path = frontend_dist / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(str(file_path))
+        return FileResponse(str(frontend_dist / "index.html"))
+else:
+    @app.get("/")
+    def read_root():
+        return {
+            "name": settings.PROJECT_NAME,
+            "status": "ONLINE",
+            "docs": "/docs",
+            "endpoints": ["POST /api/agent/init", "GET /api/agent/feed?agentId=..."]
+        }
