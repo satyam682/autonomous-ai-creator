@@ -112,6 +112,16 @@ export function App() {
   const [dateStr, setDateStr] = useState<string>('');
 
   const [sliderIndex, setSliderIndex] = useState<number>(0);
+  const [feedPageIndex, setFeedPageIndex] = useState<number>(0);
+  const [showAllFeed, setShowAllFeed] = useState<boolean>(true);
+
+  const handlePrevFeedPage = () => {
+    setFeedPageIndex(prev => (prev > 0 ? prev - 1 : posts.length - 1));
+  };
+
+  const handleNextFeedPage = () => {
+    setFeedPageIndex(prev => (prev < posts.length - 1 ? prev + 1 : 0));
+  };
 
   const handlePrevPersona = () => {
     const nextIdx = sliderIndex > 0 ? sliderIndex - 1 : PERSONA_LIST.length - 1;
@@ -578,8 +588,27 @@ export function App() {
                 {activeTab === 'feed' && (
                   <div className="neo-card-lg" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 900, textTransform: 'uppercase' }}>AUTONOMOUS FEED</h3>
-                      <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}>VIEW ALL</button>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 900, textTransform: 'uppercase' }}>
+                        AUTONOMOUS FEED ({posts.length})
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                        <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.5rem' }} onClick={handlePrevFeedPage} title="Previous Post">
+                          <ChevronLeft size={16} />
+                        </button>
+                        <span className="mono-font" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                          {posts.length > 0 ? `${feedPageIndex + 1}/${posts.length}` : '0/0'}
+                        </span>
+                        <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.5rem' }} onClick={handleNextFeedPage} title="Next Post">
+                          <ChevronRight size={16} />
+                        </button>
+                        <button 
+                          className="btn-neo btn-neo-white" 
+                          style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                          onClick={() => setShowAllFeed(!showAllFeed)}
+                        >
+                          {showAllFeed ? 'SLIDER VIEW' : 'VIEW ALL'}
+                        </button>
+                      </div>
                     </div>
 
                     {posts.length === 0 ? (
@@ -588,7 +617,7 @@ export function App() {
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                        {posts.map((post) => {
+                        {(showAllFeed ? posts : [posts[feedPageIndex] || posts[0]]).map((post) => {
                           const isExpanded = expandedPostId === post.id;
                           const lines = post.text.split('\n').filter(l => l.trim().length > 0);
                           const postTitle = lines[0] || "OpenAI releases GPT-5: Early signals, capabilities & what it means for security research";

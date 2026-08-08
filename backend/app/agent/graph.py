@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import List, Dict, Any, Optional, TypedDict
 from langgraph.graph import StateGraph, END
 from app.agent.discovery import discovery_engine
@@ -29,16 +30,18 @@ async def discover_node(state: AgentState) -> Dict[str, Any]:
     domain = state["persona_domain"]
     logger.info(f"[LangGraph Node: Discover] Discovering live topics for domain: {domain}")
     candidates = await discovery_engine.discover_topics(domain)
+    # Shuffle slightly to ensure variety across rapid triggers
+    random.shuffle(candidates)
     return {"discovered_candidates": candidates, "status": "DISCOVERED"}
 
 async def judge_node(state: AgentState) -> Dict[str, Any]:
-    """Node 2: Editorial Judgment & Curation Filter."""
+    """Node 2: Editorial Judgment & Curation Filter with Strict Deduplication."""
     agent_id = state["agent_id"]
     name = state["persona_name"]
     domain = state["persona_domain"]
     candidates = state.get("discovered_candidates", [])
     
-    logger.info(f"[LangGraph Node: Judge] Evaluating {len(candidates)} candidate topics...")
+    logger.info(f"[LangGraph Node: Judge] Evaluating {len(candidates)} candidate topics for {domain}...")
     
     accepted_topic = None
     selection_reason = ""
@@ -57,11 +60,17 @@ async def judge_node(state: AgentState) -> Dict[str, Any]:
             keywords = candidate_keywords
             break
 
-    if not accepted_topic and candidates:
-        candidate = candidates[0]
-        selection_reason = f"ACCEPTED: Top signal from {candidate.get('source', 'Live Feed')}."
-        keywords = [w for w in candidate.get("title", "").split() if len(w) > 3]
-        accepted_topic = candidate
+    # If all candidates rejected or duplicated, pick from guaranteed unique fallback pool
+    if not accepted_topic:
+        fallbacks = discovery_engine.get_fallback_topics(domain)
+        for fb in fallbacks:
+            fb_title = fb.get("title", "")
+            fb_kw = [w.strip() for w in fb_title.split() if len(w.strip()) > 3]
+            if not db_memory.is_duplicate_topic(agent_id, fb_title, fb_kw):
+                accepted_topic = fb
+                selection_reason = f"ACCEPTED: Curated research signal from {fb.get('source', 'Live Feed')}."
+                keywords = fb_kw
+                break
 
     return {
         "accepted_topic": accepted_topic,
@@ -76,7 +85,7 @@ async def generate_node(state: AgentState) -> Dict[str, Any]:
     if not accepted_topic:
         return {"status": "SKIPPED_GENERATION"}
 
-    logger.info(f"[LangGraph Node: Generate] Generating post for topic: {accepted_topic.get('title', '')[:40]}")
+    logger.info(f"[LangGraph Node: Generate] Generating post for topic: {accepted_topic.get('title', '')[:50]}")
     
     post_data = await post_generator.generate_post(
         persona_name=state["persona_name"],
@@ -94,7 +103,7 @@ async def store_node(state: AgentState) -> Dict[str, Any]:
     if not post_data:
         return {"status": "NO_POST_TO_STORE"}
 
-    logger.info(f"[LangGraph Node: Store] Saving post to SQLite memory store...")
+    logger.info(f"[LangGraph Node: Store] Saving unique post to SQLite memory store...")
     
     saved_post = db_memory.save_post(
         agent_id=state["agent_id"],

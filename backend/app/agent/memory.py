@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import uuid
+import re
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from app.config import settings
@@ -19,7 +20,6 @@ class MemoryStore:
         with self._get_connection() as conn:
             cursor = conn.cursor()
             
-            # Agents table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS agents (
                     agent_id TEXT PRIMARY KEY,
@@ -31,7 +31,6 @@ class MemoryStore:
                 )
             """)
             
-            # Posts table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS posts (
                     id TEXT PRIMARY KEY,
@@ -47,7 +46,6 @@ class MemoryStore:
                 )
             """)
             
-            # Editorial logs table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS editorial_logs (
                     id TEXT PRIMARY KEY,
@@ -62,7 +60,6 @@ class MemoryStore:
                 )
             """)
 
-            # Published topic fingerprints for deduplication
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS topic_fingerprints (
                     id TEXT PRIMARY KEY,
@@ -139,6 +136,10 @@ class MemoryStore:
         sources_json = json.dumps(sources)
         keywords_str = ",".join(keywords) if keywords else ""
         
+        # Clean title fingerprint for strict deduplication
+        clean_text = re.sub(r'[^a-zA-Z0-9\s]', '', text.lower())
+        fingerprint = f"{clean_text[:60]} {keywords_str.lower()}".strip()
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
@@ -146,8 +147,6 @@ class MemoryStore:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (post_id, agent_id, created_at, text, why_this_topic, why_now, selection_reason, sources_json, keywords_str))
             
-            # Save fingerprint for deduplication
-            fingerprint = f"{why_this_topic[:50]} {keywords_str}".lower().strip()
             cursor.execute("""
                 INSERT INTO topic_fingerprints (id, agent_id, fingerprint, published_at)
                 VALUES (?, ?, ?, ?)
@@ -236,11 +235,12 @@ class MemoryStore:
     # --- Deduplication Memory Checks ---
     def is_duplicate_topic(self, agent_id: str, candidate_text: str, candidate_keywords: List[str]) -> bool:
         """
-        Checks if candidate topic or keywords overlap significantly with already published content.
+        Strict deduplication check comparing title fingerprints and core keyword sets.
         """
+        clean_candidate = re.sub(r'[^a-zA-Z0-9\s]', '', candidate_text.lower()).strip()
         candidate_words = set([w.lower() for w in candidate_keywords if len(w) > 3])
         if not candidate_words:
-            candidate_words = set(candidate_text.lower().split())
+            candidate_words = set(clean_candidate.split()[:8])
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -250,18 +250,23 @@ class MemoryStore:
             rows = cursor.fetchall()
             
             for row in rows:
-                existing_keywords = set((row["topic_keywords"] or "").lower().split(","))
                 existing_text = (row["text"] + " " + row["why_this_topic"]).lower()
+                clean_existing = re.sub(r'[^a-zA-Z0-9\s]', '', existing_text).strip()
                 
-                # Check keyword overlap ratio
+                # 1. Direct title similarity / containment
+                if clean_candidate[:40] in clean_existing or clean_existing[:40] in clean_candidate:
+                    return True
+
+                # 2. Key phrase match
+                existing_keywords = set((row["topic_keywords"] or "").lower().split(","))
                 if candidate_words and existing_keywords:
                     overlap = candidate_words.intersection(existing_keywords)
                     if len(overlap) >= 2 or (len(candidate_words) <= 3 and len(overlap) >= 1):
                         return True
                         
-                # Direct string containment check for core subjects
-                matched_count = sum(1 for word in candidate_words if word in existing_text)
-                if len(candidate_words) > 0 and (matched_count / len(candidate_words)) > 0.6:
+                # 3. High word overlap check
+                matched_count = sum(1 for word in candidate_words if word in clean_existing)
+                if len(candidate_words) > 0 and (matched_count / len(candidate_words)) >= 0.5:
                     return True
 
         return False
