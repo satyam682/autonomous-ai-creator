@@ -113,7 +113,7 @@ export function App() {
 
   const [sliderIndex, setSliderIndex] = useState<number>(0);
   const [feedPageIndex, setFeedPageIndex] = useState<number>(0);
-  const [showAllFeed, setShowAllFeed] = useState<boolean>(true);
+  const [showAllFeed, setShowAllFeed] = useState<boolean>(false);
 
   const handlePrevFeedPage = () => {
     setFeedPageIndex(prev => (prev > 0 ? prev - 1 : posts.length - 1));
