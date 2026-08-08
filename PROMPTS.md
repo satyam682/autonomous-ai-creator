@@ -212,15 +212,39 @@ Expanded `App.tsx` and `index.css` with simulated feed cards and 5 dedicated vie
 Connect the Autonomous AI Creator backend agent to Breeth Memory Cloud Infrastructure (`ck_live_6uN6aPr_hskvcXNjUvqfnc9GruWOCDB9EAj8-bSEWd0`) for cloud persistent memory, intent tracking, and knowledge graph knot creation.
 
 [TASK]
-Integrate Breeth API client into `breeth.py` and LangGraph state machine `graph.py` so that every autonomous discovery cycle logs WRITES (post publications), INTENTS (curation goals), RETRIEVALS (deduplication queries), and KNOTS (graph knowledge topics) live to the Breeth dashboard.
+Integrate Breeth API client into `breeth.py` and LangGraph state machine `graph.py` so that every autonomous discovery cycle logs WRITES, INTENTS, RETRIEVALS, and KNOTS live to the Breeth dashboard.
 
 [ROLE]
 AI Infrastructure & Cloud Systems Specialist.
 
 [CONSTRAINT]
 - Save Breeth API Key securely in `.env`.
-- Ensure async, non-blocking Breeth API integration so local database execution stays 100% resilient.
+- Ensure async, non-blocking Breeth API integration.
 
 [OUTPUT]
 Breeth API client in `breeth.py`, updated `config.py` and `graph.py`, and updated `PROMPTS.md`.
+```
+
+---
+
+### 🔵 Prompt 9: Cohere AI (`command-a-03-2025`) & Tavily Search API Integration
+* **Timestamp**: `2026-08-08 19:29:05 IST`
+* **Format**: C-T-R-C-O
+
+```markdown
+[CONTEXT]
+Integrate Tavily Search API (`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`) for real-time web discovery and Cohere AI (`cohere_z7kmuhS8J5eVryQQvjLd5WfWXe3Zzs4ZdpPapFlv2d4fp6`, model: `command-a-03-2025`) for LLM post content and rationale generation.
+
+[TASK]
+Update `generator.py` and `config.py` to route accepted topics through Cohere Chat API (`command-a-03-2025`), generating high-signal technical post text and structured rationale (`whyThisTopic`, `whyNow`, `selectionReason`) in persona voice.
+
+[ROLE]
+AI Systems Engineer & LLM Pipeline Architect.
+
+[CONSTRAINT]
+- Store Tavily & Cohere API keys in `.env`.
+- Parse Cohere V2 Chat JSON object response format cleanly.
+
+[OUTPUT]
+Updated `generator.py`, `config.py`, `backend/.env`, and `PROMPTS.md`.
 ```

@@ -14,11 +14,15 @@ class Settings:
     BREETH_API_KEY: str = os.getenv("BREETH_API_KEY", "")
     BREETH_API_URL: str = os.getenv("BREETH_API_URL", "https://api.breeth.ai")
     
-    # LLM API Keys
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    # Cohere AI LLM Configuration
+    COHERE_API_KEY: str = os.getenv("COHERE_API_KEY", "")
+    COHERE_MODEL: str = os.getenv("COHERE_MODEL", "command-a-03-2025")
+    
+    # Tavily Search API Key
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
     
-    # Model configuration
+    # OpenAI Model configuration (Optional)
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
     
     # Database
