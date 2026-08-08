@@ -736,15 +736,29 @@ export function App() {
                     </button>
                   </div>
 
-                  {/* Timeline Graphic */}
-                  <div style={{ position: 'relative', margin: '1.5rem 0 0.5rem 0' }}>
-                    <div style={{ position: 'absolute', top: '6px', left: 0, right: 0, height: '3px', backgroundColor: '#000' }}></div>
+                  {/* Timeline Graphic with Active Persona Photo Card */}
+                  <div style={{ position: 'relative', margin: '1rem 0 0.5rem 0' }}>
+                    <div style={{ position: 'absolute', top: '100px', left: 0, right: 0, height: '3px', backgroundColor: '#000' }}></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
-                      {['0H START', '12H', '24H', '36H', '48H END'].map((node, i) => (
-                        <div key={node} style={{ textAlign: 'center' }}>
+                      {['0H START', '12H', '24H', '36H', '48H'].map((node, i) => (
+                        <div key={node} style={{ textAlign: 'center', flex: 1 }}>
+                          {i === 0 ? (
+                            <div className="neo-card" style={{ padding: '0.5rem', display: 'inline-block', backgroundColor: '#fff', marginBottom: '0.4rem' }}>
+                              <img 
+                                src={currentPersona.avatar || '/avatars/elena.png'} 
+                                alt={currentPersona.name}
+                                style={{ width: '40px', height: '40px', borderRadius: '4px', border: '1.5px solid #000', objectFit: 'cover', margin: '0 auto 0.2rem auto', display: 'block' }}
+                              />
+                              <div style={{ fontWeight: 900, fontSize: '0.68rem' }}>{currentPersona.name}</div>
+                              <div style={{ fontSize: '0.58rem', fontWeight: 700, color: '#555' }}>{currentPersona.domain}</div>
+                              <span className="badge-neo badge-lime" style={{ fontSize: '0.55rem', marginTop: '0.2rem' }}>• ACTIVE</span>
+                            </div>
+                          ) : (
+                            <div style={{ height: '75px' }}></div>
+                          )}
                           <div style={{
                             width: '14px', height: '14px', borderRadius: '50%', backgroundColor: i === 0 ? 'var(--neon-lime)' : '#fff',
-                            border: '2px solid #000', margin: '0 auto 0.4rem auto'
+                            border: '2px solid #000', margin: '0 auto 0.3rem auto'
                           }}></div>
                           <div style={{ fontSize: '0.6rem', fontWeight: 800 }}>{node}</div>
                         </div>
@@ -1154,20 +1168,37 @@ export function App() {
 
             {/* Timeline Visual Node Grid */}
             <div className="neo-card-lg" style={{ padding: '2rem', backgroundColor: '#fff' }}>
-              <div style={{ position: 'relative', margin: '2rem 0' }}>
-                <div style={{ position: 'absolute', top: '12px', left: 0, right: 0, height: '4px', backgroundColor: '#000' }}></div>
+              <div style={{ position: 'relative', margin: '2rem 0 1rem 0' }}>
+                <div style={{ position: 'absolute', top: '150px', left: 0, right: 0, height: '4px', backgroundColor: '#000' }}></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
                   {[
                     { label: '0H START', count: '1 Post', active: true },
-                    { label: '12H HORIZON', count: '3 Posts', active: true },
-                    { label: '24H MIDPOINT', count: '6 Posts', active: true },
-                    { label: '36H HORIZON', count: '9 Posts', active: true },
-                    { label: '48H COMPLETE', count: '12 Posts', active: true }
-                  ].map((node) => (
-                    <div key={node.label} style={{ textAlign: 'center', backgroundColor: '#fff', padding: '0.4rem', border: '2px solid #000', borderRadius: '6px' }}>
-                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: 'var(--neon-lime)', border: '2px solid #000', margin: '0 auto 0.4rem auto' }}></div>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 900 }}>{node.label}</div>
-                      <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#666' }}>{node.count}</div>
+                    { label: '12H HORIZON', count: '3 Posts', active: false },
+                    { label: '24H MIDPOINT', count: '6 Posts', active: false },
+                    { label: '36H HORIZON', count: '9 Posts', active: false },
+                    { label: '48H COMPLETE', count: '12 Posts', active: false }
+                  ].map((node, i) => (
+                    <div key={node.label} style={{ textAlign: 'center', flex: 1 }}>
+                      {i === 0 ? (
+                        <div className="neo-card-lg" style={{ padding: '0.8rem', display: 'inline-block', backgroundColor: '#fff', marginBottom: '0.8rem', maxWidth: '160px' }}>
+                          <img 
+                            src={currentPersona.avatar || '/avatars/elena.png'} 
+                            alt={currentPersona.name}
+                            style={{ width: '64px', height: '64px', borderRadius: '4px', border: '2px solid #000', objectFit: 'cover', margin: '0 auto 0.4rem auto', display: 'block' }}
+                          />
+                          <div style={{ fontWeight: 900, fontSize: '0.85rem' }}>{currentPersona.name}</div>
+                          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#555' }}>{currentPersona.domain}</div>
+                          <span className="badge-neo badge-lime" style={{ fontSize: '0.65rem', marginTop: '0.3rem' }}>• ACTIVE</span>
+                        </div>
+                      ) : (
+                        <div style={{ height: '135px' }}></div>
+                      )}
+                      <div style={{
+                        width: '24px', height: '24px', borderRadius: '50%', backgroundColor: i === 0 ? 'var(--neon-lime)' : '#fff',
+                        border: '3px solid #000', margin: '0 auto 0.4rem auto'
+                      }}></div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 900 }}>{node.label}</div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#666' }}>{node.count}</div>
                     </div>
                   ))}
                 </div>
