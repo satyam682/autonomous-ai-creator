@@ -176,3 +176,33 @@ Lead Full-Stack Developer & AI Systems Architect.
 [OUTPUT]
 LangGraph state machine graph in `graph.py`, updated APScheduler runner in `scheduler.py`, thin API endpoints in `main.py`, and complete architecture document.
 ```
+
+---
+
+### 🔵 Prompt 7: Complete Multi-View Platform Suite & Simulated Feed Experience
+* **Timestamp**: `2026-08-08 18:40:48 IST`
+* **Format**: C-T-R-C-O
+
+```markdown
+[CONTEXT]
+The hackathon evaluators require simulated publishing (no real social posting required). We need a dedicated Simulated Feed Platform layout and dedicated interactive views for all sidebar sections (`DECISIONS`, `SOURCES`, `TIMELINE`, `VAULT`, `SETTINGS`).
+
+[TASK]
+Implement a complete Neo-Brutalist platform suite featuring:
+1. **Simulated Social Feed View**: Interactive feed cards resembling a modern tech publishing platform with avatar headers, repost/like interactions, and expandable rationale drawers.
+2. **`DECISIONS` View**: Curation Matrix displaying evaluated candidate topics, score filters (0-10), and rejection reasons.
+3. **`SOURCES` View**: Live feed status monitor (Tavily, Hacker News, arXiv, DuckDuckGo) with latency metrics and toggle controls.
+4. **`TIMELINE` View**: Interactive 48-Hour publishing schedule visualizer and timeline simulator.
+5. **`VAULT` View**: Persistent SQLite memory inspector showing persona records, post archives, and keyword fingerprints.
+6. **`SETTINGS` View**: Agent voice prompt customizer, publishing cadence slider, and API Key manager.
+
+[ROLE]
+Lead Full-Stack UI/UX Specialist & Systems Architect.
+
+[CONSTRAINT]
+- Maintain 100% Neo-Brutalist design aesthetic with sharp borders, offset shadows, and neon accent colors.
+- Ensure all sidebar navigation links render dedicated, fully functional views.
+
+[OUTPUT]
+Expanded `App.tsx` and `index.css` with simulated feed cards and 5 dedicated view modules.
+```
