@@ -5,9 +5,7 @@ from typing import Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.config import settings
 from app.agent.memory import db_memory
-from app.agent.discovery import discovery_engine
-from app.agent.evaluator import evaluator
-from app.agent.generator import post_generator
+from app.agent.graph import autonomous_agent_graph
 
 logger = logging.getLogger("scheduler")
 
@@ -21,7 +19,7 @@ class AutonomousScheduler:
         if not self.is_running:
             self.scheduler.start()
             self.is_running = True
-            # Schedule periodic cycle check every 5 minutes (will auto-publish when interval elapsed)
+            # Schedule periodic cycle check every 5 minutes
             self.scheduler.add_job(
                 self._background_publishing_tick,
                 "interval",
@@ -29,7 +27,7 @@ class AutonomousScheduler:
                 id="autonomous_tick",
                 replace_existing=True
             )
-            logger.info("Autonomous APScheduler started.")
+            logger.info("Autonomous APScheduler started with LangGraph engine.")
 
     def stop(self):
         if self.is_running:
@@ -38,73 +36,38 @@ class AutonomousScheduler:
 
     async def run_publishing_cycle(self, agent_id: str, custom_created_at: Optional[str] = None) -> Optional[dict]:
         """
-        Executes 1 complete autonomous publishing loop:
-        Discover -> Filter & Evaluate -> Write -> Persist
+        Executes 1 complete autonomous publishing loop via LangGraph StateMachine:
+        Discover Node -> Judge Node -> Generate Node -> Store Node
         """
         agent = db_memory.get_agent(agent_id)
         if not agent:
             logger.warning(f"Cannot run cycle: Agent {agent_id} not found.")
             return None
 
-        domain = agent["domain"]
-        name = agent["name"]
-        voice = agent.get("voice_description")
+        initial_state = {
+            "agent_id": agent_id,
+            "persona_name": agent["name"],
+            "persona_domain": agent["domain"],
+            "voice_description": agent.get("voice_description"),
+            "discovered_candidates": [],
+            "accepted_topic": None,
+            "selection_reason": None,
+            "keywords": [],
+            "generated_post": None,
+            "saved_post": None,
+            "custom_created_at": custom_created_at,
+            "status": "INITIALIZED"
+        }
 
-        # 1. Discover live topic candidates
-        candidates = await discovery_engine.discover_topics(domain)
-        logger.info(f"Discovered {len(candidates)} raw candidates for {domain}.")
-
-        # 2. Filter & Apply Editorial Judgment
-        accepted_topic = None
-        selection_reason = ""
-        keywords = []
-
-        for candidate in candidates:
-            is_accepted, score, reason, candidate_keywords = await evaluator.evaluate_candidate(
-                agent_id=agent_id,
-                persona_name=name,
-                persona_domain=domain,
-                candidate=candidate
-            )
-            if is_accepted:
-                accepted_topic = candidate
-                selection_reason = reason
-                keywords = candidate_keywords
-                break
-
-        # Fallback if all candidates rejected
-        if not accepted_topic and candidates:
-            candidate = candidates[0]
-            selection_reason = f"ACCEPTED: Selected top priority signal from {candidate.get('source', 'Live Feed')}."
-            keywords = [w for w in candidate.get("title", "").split() if len(w) > 3]
-            accepted_topic = candidate
-
-        if not accepted_topic:
-            logger.warning("No candidate topics available.")
-            return None
-
-        # 3. Generate Post with Persona Voice & Rationale
-        post_data = await post_generator.generate_post(
-            persona_name=name,
-            persona_domain=domain,
-            voice_description=voice,
-            topic=accepted_topic,
-            selection_reason=selection_reason
-        )
-
-        # 4. Save to Persistent Memory
-        saved_post = db_memory.save_post(
-            agent_id=agent_id,
-            text=post_data["text"],
-            why_this_topic=post_data["whyThisTopic"],
-            why_now=post_data["whyNow"],
-            selection_reason=post_data["selectionReason"],
-            sources=post_data["sources"],
-            keywords=keywords,
-            custom_created_at=custom_created_at
-        )
-
-        logger.info(f"Successfully published post {saved_post['id']} for agent {agent_id}.")
+        # Invoke LangGraph State Graph
+        final_state = await autonomous_agent_graph.ainvoke(initial_state)
+        
+        saved_post = final_state.get("saved_post")
+        if saved_post:
+            logger.info(f"LangGraph Cycle completed! Published post {saved_post['id']} for agent {agent_id}.")
+        else:
+            logger.warning("LangGraph Cycle completed without generating a new post.")
+            
         return saved_post
 
     async def _background_publishing_tick(self):
@@ -117,11 +80,9 @@ class AutonomousScheduler:
         feed = db_memory.get_feed(agent_id)
 
         if not feed:
-            # First post right away
             await self.run_publishing_cycle(agent_id)
             return
 
-        # Check time since latest post
         latest_post_time_str = feed[0]["createdAt"]
         try:
             latest_dt = datetime.fromisoformat(latest_post_time_str.replace("Z", "+00:00"))
@@ -129,7 +90,7 @@ class AutonomousScheduler:
             delta = now_dt - latest_dt
 
             if delta >= timedelta(minutes=self.interval_minutes):
-                logger.info(f"Publishing interval ({self.interval_minutes}m) elapsed. Triggering autonomous post.")
+                logger.info(f"Publishing interval ({self.interval_minutes}m) elapsed. Triggering autonomous LangGraph cycle.")
                 await self.run_publishing_cycle(agent_id)
         except Exception as e:
             logger.warning(f"Error parsing timestamp in scheduler tick: {e}")

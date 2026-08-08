@@ -1,13 +1,12 @@
 # Autonomous AI Creator — AI Usage Log (`PROMPTS.md`)
 
-This file records the prompts, instructions, and architectural decisions logged throughout the development of the Autonomous AI Content Creator.
+This file records the key prompts, architectural milestones, and major UI design decisions logged throughout the development of the Autonomous AI Content Creator.
 
 ---
 
-## 📅 Prompt Log
+## 📅 Major Milestone Prompts
 
 ### 🔵 Prompt 1: Project Framing & Requirement Breakdown
-
 * **Timestamp**: `2026-08-08 08:58:32 IST`
 * **Format**: C-T-R-C-O (Context - Task - Role - Constraint - Output)
 
@@ -55,7 +54,6 @@ followed by a short list of open questions or ambiguities you'd want clarified b
 ---
 
 ### 🔵 Prompt 2: Submission Checklist & PROMPTS.md Clarification
-
 * **Timestamp**: `2026-08-08 09:05:38 IST`
 * **Format**: C-T-R-C-O
 
@@ -81,26 +79,24 @@ Comprehensive guide and template for PROMPTS.md.
 
 ---
 
-### 🔵 Prompt 3: Tech Stack Finalization & Repository Setup
-
+### 🔵 Prompt 3: Tech Stack Selection & Initial Repository Architecture
 * **Timestamp**: `2026-08-08 09:12:49 IST`
 * **Format**: C-T-R-C-O
 
 ```markdown
 [CONTEXT]
-We are setting up the project repository for the Autonomous AI Creator.
-
-[TASK]
-Initialize the folder structure and setup PROMPTS.md with timestamps and C-T-R-C-O formatting.
-Tech Stack details:
+Finalized Tech Stack:
 - Frontend: React + TypeScript + Vite (`frontend/`)
 - Backend: Python with FastAPI + LangGraph/LangChain (`backend/`)
+
+[TASK]
+Initialize the folder structure and setup PROMPTS.md with timestamps and C-T-R-C-O formatting. Present an implementation plan for full system architecture.
 
 [ROLE]
 Lead Full-Stack Developer & AI Systems Architect.
 
 [CONSTRAINT]
-Create standard project directory structure (`frontend/`, `backend/`), initialize `PROMPTS.md` with timestamps and C-T-R-C-O structured prompts, and present an implementation plan for full system architecture.
+Create standard project directory structure (`frontend/`, `backend/`), initialize `PROMPTS.md` with timestamps and C-T-R-C-O structured prompts, and present an implementation plan artifact.
 
 [OUTPUT]
 Project folder setup, initialized `PROMPTS.md`, and complete implementation plan artifact.
@@ -108,27 +104,75 @@ Project folder setup, initialized `PROMPTS.md`, and complete implementation plan
 
 ---
 
-### 🔵 Prompt 4: Neo-Brutalist UI Design & Live Search API Strategy
-
+### 🔵 Prompt 4: Multi-Source Live Search API Engine Strategy
 * **Timestamp**: `2026-08-08 09:30:39 IST`
 * **Format**: C-T-R-C-O
 
 ```markdown
 [CONTEXT]
-The implementation plan is approved. The user requested:
-1. Neo-Brutalist UI design for the frontend to create a striking, high-contrast, modern retro-futuristic aesthetic.
-2. Strategy for live search APIs to win the hackathon.
+To ensure maximum signal-to-noise ratio and 100% uptime during hackathon evaluation, the discovery engine needs a resilient, multi-tiered live search architecture.
 
 [TASK]
-Integrate Neo-Brutalist design system into the React frontend and architect a multi-tiered live discovery pipeline (Tavily AI Search + Hacker News API + arXiv AI API + DuckDuckGo fallback).
+Architect a multi-source topic discovery pipeline combining Tavily AI Search API, official Hacker News API (`/v0/topstories.json`), arXiv AI papers API, and live RSS feeds with fallback mechanisms.
 
 [ROLE]
-Lead UI/UX Designer & AI Systems Architect.
+AI Systems Architect & Data Pipeline Engineer.
 
 [CONSTRAINT]
-- Implement bold neo-brutalist styling (sharp drop shadows, high-contrast borders, neon accent badges, monospaced tech typography).
-- Provide a robust multi-source live topic discovery engine ensuring 100% uptime and high signal-to-noise ratio.
+- Support Tavily Search for real-time web discovery.
+- Integrate free live technical feeds (Hacker News, arXiv AI papers) for guaranteed uptime.
+- Enforce strict topic deduplication against persistent SQLite memory.
 
 [OUTPUT]
-Complete backend implementation, Neo-Brutalist frontend UI, and end-to-end integration.
+Multi-source live discovery engine and memory integration in `discovery.py` and `memory.py`.
+```
+
+---
+
+### 🔵 Prompt 5: High-Fidelity NOVA Neo-Brutalist Dashboard Redesign
+* **Timestamp**: `2026-08-08 09:50:53 IST`
+* **Format**: C-T-R-C-O
+
+```markdown
+[CONTEXT]
+Redesign the React frontend dashboard to match the exact high-fidelity "NOVA AUTONOMOUS AI CREATOR" Neo-Brutalist UI layout design mockup.
+
+[TASK]
+Implement a pixel-perfect, responsive Neo-Brutalist dashboard featuring dark left sidebar with bracketed logo, action button row, persona cards with portrait avatars, stat cards, feed with tags, 48h timeline visual, filter funnel status, and live top sources.
+
+[ROLE]
+Senior UI/UX Engineer & Frontend Specialist.
+
+[CONSTRAINT]
+- Replicate the exact visual hierarchy, sharp 3px black borders, offset drop shadows, neon accents, and typography.
+- Use generated ink stipple portrait avatars for persona cards.
+
+[OUTPUT]
+Redesigned `App.tsx` and updated `index.css` matching the target mockup.
+```
+
+---
+
+### 🔵 Prompt 6: Complete End-to-End System Architecture & LangGraph State Machine
+* **Timestamp**: `2026-08-08 09:58:36 IST`
+* **Format**: C-T-R-C-O
+
+```markdown
+[CONTEXT]
+The evaluator will hit only two thin REST endpoints (`POST /api/agent/init` and `GET /api/agent/feed`), but internally the agent must run continuously and autonomously for ~48 hours, cycling through: discover → filter/judge → write → store → schedule next run — all without any further human prompting or API triggers.
+
+[TASK]
+Design and implement the full end-to-end system architecture using a LangGraph state machine (`discover` -> `judge` -> `generate` -> `store`), an async APScheduler background loop, persistent SQLite memory (`agent_memory.db`), and thin FastAPI endpoints.
+
+[ROLE]
+Lead Full-Stack Developer & AI Systems Architect.
+
+[CONSTRAINT]
+- `/init` and `/feed` endpoints must remain thin and non-blocking.
+- Background scheduler runs independently over ~48 hours.
+- Database persists agents, posts, rejected topics, and topic fingerprints.
+- LangGraph graph state machine manages stage transitions.
+
+[OUTPUT]
+LangGraph state machine graph in `graph.py`, updated APScheduler runner in `scheduler.py`, thin API endpoints in `main.py`, and complete architecture document.
 ```

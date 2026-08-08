@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Bot, RefreshCw, Zap, Clock, ExternalLink, ShieldCheck, 
-  Filter, CheckCircle, XCircle, Copy, Check, Play, Sparkles, Terminal
+  LayoutDashboard, Rss, ShieldAlert, Globe, Clock, Box, Settings, Code,
+  Play, Sparkles, Copy, Check, ExternalLink, Activity, Filter, ChevronLeft, ChevronRight,
+  TrendingUp, CheckCircle2, XCircle, ShieldCheck
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000';
@@ -9,6 +10,7 @@ const API_BASE = 'http://localhost:8000';
 interface Persona {
   name: string;
   domain: string;
+  avatar: string;
   voice_description?: string;
 }
 
@@ -45,52 +47,72 @@ interface AgentStatus {
   isRunning: boolean;
 }
 
-const PRESETS: Persona[] = [
+const PERSONA_LIST: Persona[] = [
   {
-    name: "Dr. Elena Vance",
+    name: "DR. ELENA VANCE",
     domain: "AI Security Researcher",
+    avatar: "/avatars/elena.png",
     voice_description: "Skeptical, empirical, razor-sharp focus on prompt injections, model security, and vulnerability research."
   },
   {
-    name: "Marcus Chen",
+    name: "MARCUS CHEN",
     domain: "ML Systems Engineer",
+    avatar: "/avatars/marcus.png",
     voice_description: "Obsessed with CUDA benchmarks, vLLM inference speed, memory bandwidth, and GPU efficiency."
   },
   {
-    name: "Sophia Rodriguez",
+    name: "SOPHIA RODRIGUEZ",
     domain: "AI Product Analyst",
+    avatar: "/avatars/sophia.png",
     voice_description: "Strategic, focused on unit economics, API pricing moats, developer platforms, and enterprise retention."
   },
   {
-    name: "Alex Rivers",
+    name: "ALEX RIVERS",
     domain: "Developer Advocate",
+    avatar: "/avatars/alex.png",
     voice_description: "Hands-on, enthusiastic about open-source local LLMs, LangGraph workflows, and developer DX."
   }
 ];
 
 export function App() {
+  const [activeNav, setActiveNav] = useState<string>('DASHBOARD');
   const [activeTab, setActiveTab] = useState<'feed' | 'editorial' | 'api'>('feed');
-  const [agentId, setAgentId] = useState<string>('');
+  const [agentId, setAgentId] = useState<string>('agent_91596f42');
   const [status, setStatus] = useState<AgentStatus | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [editorialLogs, setEditorialLogs] = useState<EditorialLog[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [actionMessage, setActionMessage] = useState<string>('');
   
-  // Custom Init Form
-  const [customName, setCustomName] = useState<string>('Dr. Elena Vance');
-  const [customDomain, setCustomDomain] = useState<string>('AI Security Researcher');
+  // Active Persona selection
+  const [selectedPersona, setSelectedPersona] = useState<Persona>(PERSONA_LIST[0]);
+  
+  // Modals & Accordions
   const [showInitModal, setShowInitModal] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string>('');
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
 
-  // Expanded rationale tracking
-  const [expandedRationale, setExpandedRationale] = useState<Record<string, boolean>>({});
+  // Clock state
+  const [timeStr, setTimeStr] = useState<string>('');
+  const [dateStr, setDateStr] = useState<string>('');
 
   useEffect(() => {
+    updateClock();
+    const clockInterval = setInterval(updateClock, 1000);
     fetchFeedAndStatus();
-    const interval = setInterval(fetchFeedAndStatus, 10000);
-    return () => clearInterval(interval);
+    const pollInterval = setInterval(fetchFeedAndStatus, 8000);
+    return () => {
+      clearInterval(clockInterval);
+      clearInterval(pollInterval);
+    };
   }, [agentId]);
+
+  const updateClock = () => {
+    const now = new Date();
+    setTimeStr(now.toLocaleTimeString('en-GB', { hour12: false }));
+    const d = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+    setDateStr(`${d} (IST)`);
+  };
 
   const fetchFeedAndStatus = async () => {
     try {
@@ -100,7 +122,7 @@ export function App() {
       
       const feedRes = await fetch(feedUrl);
       if (feedRes.ok) {
-        const feedData = await fetch(feedRes.json() as any);
+        const feedData = await feedRes.json();
         setPosts(feedData.posts || []);
       }
 
@@ -117,7 +139,6 @@ export function App() {
         }
       }
 
-      // Fetch Editorial Logs
       const logsUrl = agentId 
         ? `${API_BASE}/api/agent/editorial-logs?agentId=${agentId}`
         : `${API_BASE}/api/agent/editorial-logs`;
@@ -127,18 +148,25 @@ export function App() {
         setEditorialLogs(logsData.logs || []);
       }
     } catch (e) {
-      console.warn("Backend not reached yet or initializing...", e);
+      // Background catch
     }
   };
 
   const handleInitAgent = async (persona: Persona) => {
     setLoading(true);
-    setActionMessage('Initializing autonomous agent...');
+    setSelectedPersona(persona);
+    setActionMessage(`Initializing autonomous agent for ${persona.name}...`);
     try {
       const res = await fetch(`${API_BASE}/api/agent/init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ persona })
+        body: JSON.stringify({
+          persona: {
+            name: persona.name,
+            domain: persona.domain,
+            voice_description: persona.voice_description
+          }
+        })
       });
       if (res.ok) {
         const data = await res.json();
@@ -157,7 +185,7 @@ export function App() {
 
   const handleTriggerCycle = async () => {
     setLoading(true);
-    setActionMessage('Running autonomous discovery, evaluation & post generation...');
+    setActionMessage('Executing live discovery, editorial evaluation & post generation...');
     try {
       const res = await fetch(`${API_BASE}/api/agent/trigger-cycle?agentId=${agentId}`, {
         method: 'POST'
@@ -167,12 +195,12 @@ export function App() {
         if (data.status === 'SUCCESS') {
           setActionMessage('New post published autonomously!');
         } else {
-          setActionMessage(data.message || 'Topic evaluation completed.');
+          setActionMessage(data.message || 'Cycle completed.');
         }
         await fetchFeedAndStatus();
       }
     } catch (e) {
-      setActionMessage('Error triggering cycle.');
+      setActionMessage('Error running cycle.');
     } finally {
       setLoading(false);
       setTimeout(() => setActionMessage(''), 4000);
@@ -188,7 +216,7 @@ export function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        setActionMessage(`Simulated 48h! Generated ${data.postsGenerated} historical posts across timeline.`);
+        setActionMessage(`Timeline generated! ${data.postsGenerated} posts published over 48h simulation.`);
         await fetchFeedAndStatus();
       }
     } catch (e) {
@@ -199,359 +227,586 @@ export function App() {
     }
   };
 
-  const toggleRationale = (id: string) => {
-    setExpandedRationale(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(''), 2000);
   };
 
+  const currentPersona = status?.persona || selectedPersona;
+  const postCount = posts.length || status?.postCount || 1;
+  const rejectedCount = status?.rejectedCount || 0;
+  const acceptRate = (postCount + rejectedCount) > 0 
+    ? Math.round((postCount / (postCount + rejectedCount)) * 100) 
+    : 100;
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem' }}>
+    <div className="nova-app-container">
       
-      {/* Top Header Navigation */}
-      <header className="neo-box-lg" style={{ padding: '1.2rem 1.5rem', marginBottom: '1.5rem', backgroundColor: '#fff' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      {/* 1. LEFT SIDEBAR */}
+      <aside className="nova-sidebar">
+        <div>
+          {/* Logo Branding */}
+          <div className="nova-brand-logo">
+            <div className="nova-brand-title">NOVA</div>
+          </div>
+
+          {/* Navigation Links */}
+          <ul className="nova-nav-list">
+            <li 
+              className={`nova-nav-item ${activeNav === 'DASHBOARD' ? 'active' : ''}`}
+              onClick={() => { setActiveNav('DASHBOARD'); setActiveTab('feed'); }}
+            >
+              <LayoutDashboard size={18} /> DASHBOARD
+            </li>
+            <li 
+              className={`nova-nav-item ${activeNav === 'FEED' ? 'active' : ''}`}
+              onClick={() => { setActiveNav('FEED'); setActiveTab('feed'); }}
+            >
+              <Rss size={18} /> FEED
+            </li>
+            <li 
+              className={`nova-nav-item ${activeNav === 'DECISIONS' ? 'active' : ''}`}
+              onClick={() => { setActiveNav('DECISIONS'); setActiveTab('editorial'); }}
+            >
+              <Filter size={18} /> DECISIONS
+            </li>
+            <li className="nova-nav-item">
+              <Globe size={18} /> SOURCES
+            </li>
+            <li className="nova-nav-item">
+              <Clock size={18} /> TIMELINE
+            </li>
+            <li className="nova-nav-item">
+              <Box size={18} /> VAULT
+            </li>
+            <li className="nova-nav-item">
+              <Settings size={18} /> SETTINGS
+            </li>
+            <li 
+              className={`nova-nav-item ${activeNav === 'API' ? 'active' : ''}`}
+              onClick={() => { setActiveNav('API'); setActiveTab('api'); }}
+            >
+              <Code size={18} /> &lt;/&gt; API DOCS
+            </li>
+          </ul>
+        </div>
+
+        {/* Sidebar Uptime Footer Card */}
+        <div style={{
+          backgroundColor: '#16181a',
+          border: '2px solid #333',
+          padding: '0.8rem',
+          borderRadius: '4px'
+        }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#888', textTransform: 'uppercase' }}>
+            AGENT UPTIME
+          </div>
+          <div className="mono-font" style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', margin: '0.2rem 0' }}>
+            12h 37m 22s
+          </div>
+          {/* Mini Sparkline Graph */}
+          <div style={{ height: '18px', width: '100%', margin: '0.3rem 0' }}>
+            <svg width="100%" height="18" viewBox="0 0 100 18">
+              <path d="M0 12 L20 14 L40 6 L60 10 L80 4 L100 8" fill="none" stroke="var(--neon-lime)" strokeWidth="2" />
+            </svg>
+          </div>
+          <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>
+            SINCE LAST INIT
+          </div>
+        </div>
+      </aside>
+
+      {/* 2. MAIN DASHBOARD CONTENT AREA */}
+      <main className="nova-main-content">
+
+        {/* TOP HEADER SECTION */}
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <div className="neo-badge badge-yellow" style={{ fontSize: '1rem', padding: '0.4rem 0.8rem' }}>
-                <Bot size={20} /> AUTONOMOUS AI CREATOR
-              </div>
-              <span className="neo-badge badge-green">LIVE 🟢</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <h1 style={{ fontSize: '1.9rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.5px' }}>
+                AUTONOMOUS AI CREATOR
+              </h1>
+              <span className="badge-neo badge-lime" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}>
+                • LIVE
+              </span>
             </div>
-            <p style={{ fontWeight: 700, fontSize: '0.9rem', marginTop: '0.4rem', color: '#333' }}>
-              Zero human prompting after init • 48h Scheduled Cadence • Transparent Rationale & Audit Vault
+            <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#333', marginTop: '0.2rem' }}>
+              Zero human prompting • 48h Scheduled Cadence • Transparent Rationale & Audit Vault
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-            <button className="neo-btn neo-btn-primary" onClick={() => setShowInitModal(true)}>
-              <Sparkles size={16} /> Init Agent
+          {/* Clock & Status Header Widget */}
+          <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+            <div className="neo-card" style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <Activity size={18} color="var(--neon-green)" />
+              <div>
+                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#666' }}>SYSTEM STATUS</div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#000' }}>OPERATIONAL</div>
+              </div>
+            </div>
+
+            <div className="neo-card mono-font" style={{ padding: '0.6rem 1rem', textAlign: 'right' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 900 }}>{timeStr || '09:42:18'}</div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#555' }}>{dateStr || '08 AUG 2026 (IST)'}</div>
+            </div>
+          </div>
+        </header>
+
+        {/* ACTION BUTTON ROW */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
+          <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
+            <button className="btn-neo btn-neo-lime" onClick={() => setShowInitModal(true)}>
+              <Sparkles size={16} /> INIT AGENT
             </button>
-            <button className="neo-btn neo-btn-cyan" onClick={handleTriggerCycle} disabled={loading}>
-              <Play size={16} /> Run Cycle Now
+            <button className="btn-neo btn-neo-cyan" onClick={handleTriggerCycle} disabled={loading}>
+              <Play size={16} /> RUN CYCLE NOW
             </button>
-            <button className="neo-btn neo-btn-pink" onClick={handleSimulate48h} disabled={loading}>
-              <Clock size={16} /> Simulate 48h Timeline
+            <button className="btn-neo btn-neo-pink" onClick={handleSimulate48h} disabled={loading}>
+              <Clock size={16} /> SIMULATE 48H TIMELINE
+            </button>
+          </div>
+
+          {/* Active Agent ID Card */}
+          <div className="neo-card" style={{ padding: '0.5rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <div>
+              <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#666' }}>ACTIVE AGENT ID</div>
+              <div className="mono-font" style={{ fontSize: '0.9rem', fontWeight: 800 }}>{agentId}</div>
+            </div>
+            <button 
+              className="btn-neo btn-neo-white" 
+              style={{ padding: '0.4rem 0.6rem' }}
+              onClick={() => copyToClipboard(agentId, 'agentId')}
+            >
+              {copiedId === 'agentId' ? <Check size={14} /> : <Copy size={14} />}
             </button>
           </div>
         </div>
 
-        {/* Action Message Banner */}
+        {/* Action Message Bar */}
         {actionMessage && (
-          <div className="neo-box badge-yellow" style={{ marginTop: '1rem', padding: '0.6rem 1rem', fontWeight: 800 }}>
+          <div className="neo-card badge-lime" style={{ padding: '0.7rem 1rem', fontWeight: 800, fontSize: '0.9rem' }}>
             ⚡ {actionMessage}
           </div>
         )}
-      </header>
 
-      {/* Preset Persona Quick Select Bar */}
-      <div className="neo-box" style={{ padding: '1rem', marginBottom: '1.5rem', backgroundColor: '#fff' }}>
-        <div style={{ fontWeight: 800, fontSize: '0.9rem', marginBottom: '0.6rem', textTransform: 'uppercase' }}>
-          🎯 Select / Switch Active Persona Archetype:
-        </div>
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-          {PRESETS.map((p) => {
-            const isActive = status?.persona?.domain === p.domain;
-            return (
-              <button
-                key={p.domain}
-                className={`neo-btn ${isActive ? 'neo-btn-primary' : ''}`}
-                style={{ backgroundColor: isActive ? 'var(--yellow)' : '#fff', fontSize: '0.85rem' }}
-                onClick={() => handleInitAgent(p)}
-              >
-                {p.name} <span style={{ opacity: 0.7, fontWeight: 500 }}>({p.domain})</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Status Bar Grid */}
-      {status && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          <div className="neo-box" style={{ padding: '1rem', backgroundColor: '#fff' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>ACTIVE AGENT ID</div>
-            <div className="mono-text" style={{ fontSize: '1rem', fontWeight: 800, marginTop: '0.2rem' }}>{status.agentId}</div>
-          </div>
-          <div className="neo-box" style={{ padding: '1rem', backgroundColor: '#fff' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>PERSONA NAME & DOMAIN</div>
-            <div style={{ fontSize: '0.95rem', fontWeight: 800, marginTop: '0.2rem' }}>{status.persona.name}</div>
-            <div className="neo-badge badge-cyan" style={{ marginTop: '0.3rem', fontSize: '0.7rem' }}>{status.persona.domain}</div>
-          </div>
-          <div className="neo-box" style={{ padding: '1rem', backgroundColor: '#fff' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>FEED POSTS PUBLISHED</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '0.1rem' }}>{status.postCount} Posts</div>
-          </div>
-          <div className="neo-box" style={{ padding: '1rem', backgroundColor: '#fff' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>TOPICS REJECTED (EDITORIAL FILTER)</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '0.1rem', color: 'var(--pink)' }}>{status.rejectedCount} Rejected</div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Tabs Header */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        <button
-          className={`neo-btn ${activeTab === 'feed' ? 'neo-btn-primary' : ''}`}
-          onClick={() => setActiveTab('feed')}
-        >
-          <Bot size={16} /> Autonomous Feed ({posts.length})
-        </button>
-        <button
-          className={`neo-btn ${activeTab === 'editorial' ? 'neo-btn-pink' : ''}`}
-          onClick={() => setActiveTab('editorial')}
-        >
-          <Filter size={16} /> Editorial Decision Vault ({editorialLogs.length})
-        </button>
-        <button
-          className={`neo-btn ${activeTab === 'api' ? 'neo-btn-cyan' : ''}`}
-          onClick={() => setActiveTab('api')}
-        >
-          <Terminal size={16} /> Evaluator API Specs
-        </button>
-      </div>
-
-      {/* TAB 1: AUTONOMOUS FEED */}
-      {activeTab === 'feed' && (
-        <div>
-          {posts.length === 0 ? (
-            <div className="neo-box" style={{ padding: '3rem', textAlign: 'center', backgroundColor: '#fff' }}>
-              <Bot size={48} style={{ marginBottom: '1rem' }} />
-              <h3>No posts published yet.</h3>
-              <p style={{ marginTop: '0.5rem' }}>Click "Init Agent" or "Run Cycle Now" to start autonomous post generation.</p>
+        {/* PERSONA ARCHETYPE CAROUSEL / CARDS */}
+        <div className="neo-card-lg" style={{ padding: '1.2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ fontWeight: 900, fontSize: '0.9rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>👤</span> SELECT / SWITCH ACTIVE PERSONA ARCHETYPE
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-              {posts.map((post) => {
-                const isExpanded = expandedRationale[post.id];
-                return (
-                  <article key={post.id} className="neo-box-lg" style={{ padding: '1.5rem', backgroundColor: '#fff' }}>
-                    
-                    {/* Post Meta Bar */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', borderBottom: '2px solid #000', paddingBottom: '0.8rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <span className="neo-badge badge-yellow">{status?.persona?.name || "AI Agent"}</span>
-                        <span className="neo-badge badge-white mono-text" style={{ fontSize: '0.75rem' }}>
-                          <Clock size={12} style={{ marginRight: '4px' }} /> {post.createdAt}
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.5rem' }}><ChevronLeft size={16} /></button>
+              <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.5rem' }}><ChevronRight size={16} /></button>
+            </div>
+          </div>
+
+          {/* Cards Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            {PERSONA_LIST.map((p) => {
+              const isActive = currentPersona?.domain === p.domain || currentPersona?.name === p.name;
+              return (
+                <div 
+                  key={p.name}
+                  className="neo-card"
+                  style={{
+                    padding: '1rem',
+                    cursor: 'pointer',
+                    backgroundColor: isActive ? 'var(--neon-lime)' : '#ffffff',
+                    transform: isActive ? 'translate(-2px, -2px)' : 'none',
+                    boxShadow: isActive ? '5px 5px 0px #000' : '3px 3px 0px #000',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onClick={() => handleInitAgent(p)}
+                >
+                  <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+                    <img 
+                      src={p.avatar} 
+                      alt={p.name}
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '4px',
+                        border: '2px solid #000',
+                        backgroundColor: '#fff',
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: '0.88rem', textTransform: 'uppercase' }}>{p.name}</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#333' }}>{p.domain}</div>
+                      {isActive && (
+                        <span className="badge-neo badge-green" style={{ marginTop: '0.4rem', fontSize: '0.65rem' }}>
+                          • ACTIVE
                         </span>
-                      </div>
-                      <button 
-                        className="neo-btn" 
-                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', backgroundColor: '#fff' }}
-                        onClick={() => copyToClipboard(post.text, post.id)}
-                      >
-                        {copiedId === post.id ? <Check size={12} /> : <Copy size={12} />}
-                        {copiedId === post.id ? 'Copied' : 'Copy Post'}
-                      </button>
-                    </div>
-
-                    {/* Post Content Text */}
-                    <div style={{ fontSize: '1.05rem', fontWeight: 500, whiteSpace: 'pre-line', lineHeight: '1.6', marginBottom: '1.2rem' }}>
-                      {post.text}
-                    </div>
-
-                    {/* Sources Badge */}
-                    {post.sources && post.sources.length > 0 && (
-                      <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.8rem' }}>SOURCES:</span>
-                        {post.sources.map((src, idx) => (
-                          <a 
-                            key={idx} 
-                            href={src} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="neo-badge badge-cyan"
-                            style={{ textDecoration: 'none', color: '#000' }}
-                          >
-                            Source #{idx + 1} <ExternalLink size={12} />
-                          </a>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Transparent Rationale Accordion */}
-                    <div className="neo-box" style={{ backgroundColor: '#fff9e6', padding: '1rem', marginTop: '0.8rem' }}>
-                      <div 
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: 800 }}
-                        onClick={() => toggleRationale(post.id)}
-                      >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <ShieldCheck size={18} color="#000" /> TRANSPARENT RATIONALE & PROVENANCE
-                        </span>
-                        <span className="neo-badge badge-yellow">{isExpanded ? 'Hide ▲' : 'Inspect ▼'}</span>
-                      </div>
-
-                      {isExpanded && (
-                        <div style={{ marginTop: '1rem', paddingTop: '0.8rem', borderTop: '2px solid #000', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                          <div>
-                            <span style={{ fontWeight: 800, color: '#333' }}>Why This Topic: </span>
-                            <span>{post.rationale.whyThisTopic}</span>
-                          </div>
-                          <div>
-                            <span style={{ fontWeight: 800, color: '#333' }}>Why Now: </span>
-                            <span>{post.rationale.whyNow}</span>
-                          </div>
-                          <div>
-                            <span style={{ fontWeight: 800, color: '#333' }}>Editorial Decision Reason: </span>
-                            <span>{post.rationale.selectionReason}</span>
-                          </div>
-                        </div>
                       )}
                     </div>
-
-                  </article>
-                );
-              })}
-            </div>
-          )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      )}
 
-      {/* TAB 2: EDITORIAL DECISION VAULT */}
-      {activeTab === 'editorial' && (
-        <div>
-          <div className="neo-box" style={{ padding: '1.2rem', marginBottom: '1rem', backgroundColor: '#fff' }}>
-            <h3 style={{ marginBottom: '0.3rem' }}>🛡️ Editorial Curation Audit Vault</h3>
-            <p style={{ fontSize: '0.9rem', color: '#444' }}>
-              The agent actively evaluates candidate topics from live sources and <b>rejects</b> off-topic, repetitive, or low-quality items to ensure high signal-to-noise ratio.
-            </p>
+        {/* METRICS STATS BAR (4 CARDS) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+          <div className="neo-card" style={{ padding: '1rem' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>FEED POSTS PUBLISHED</div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, margin: '0.2rem 0' }}>{postCount}</div>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#888', textTransform: 'uppercase' }}>TOTAL</div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            {editorialLogs.length === 0 ? (
-              <div className="neo-box" style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#fff' }}>
-                No evaluation logs recorded yet. Run a publishing cycle to populate evaluation history.
-              </div>
-            ) : (
-              editorialLogs.map((log) => {
-                const isAccepted = log.decision === 'ACCEPTED';
-                return (
-                  <div key={log.id} className="neo-box" style={{ padding: '1rem', backgroundColor: '#fff' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {isAccepted ? (
-                          <span className="neo-badge badge-green"><CheckCircle size={14} /> ACCEPTED</span>
-                        ) : (
-                          <span className="neo-badge badge-pink"><XCircle size={14} /> REJECTED</span>
-                        )}
-                        <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{log.topicTitle}</span>
-                      </div>
-                      <span className="neo-badge badge-yellow">Score: {log.score}/10</span>
-                    </div>
+          <div className="neo-card" style={{ padding: '1rem' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>TOPICS REJECTED</div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, margin: '0.2rem 0', color: 'var(--neon-pink)' }}>{rejectedCount}</div>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#888', textTransform: 'uppercase' }}>BY EDITORIAL FILTER</div>
+          </div>
 
-                    {log.rejectionReason && (
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#c00', marginTop: '0.4rem' }}>
-                        Reason: {log.rejectionReason}
+          <div className="neo-card" style={{ padding: '1rem' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>EDITORIAL ACCEPT RATE</div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, margin: '0.2rem 0', color: 'var(--neon-green)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              {acceptRate}% <TrendingUp size={20} color="var(--neon-green)" />
+            </div>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#888', textTransform: 'uppercase' }}>THIS SESSION</div>
+          </div>
+
+          <div className="neo-card" style={{ padding: '1rem' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>SOURCES MONITORED</div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, margin: '0.2rem 0' }}>12</div>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--neon-green)', textTransform: 'uppercase' }}>LIVE</div>
+          </div>
+        </div>
+
+        {/* MAIN FEED AREA & RIGHT PANEL GRID */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2.2fr) minmax(0, 1fr)', gap: '1.5rem' }}>
+          
+          {/* LEFT MAIN AREA */}
+          <div>
+            {/* Sub Nav Tabs */}
+            <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1rem' }}>
+              <button 
+                className={`btn-neo ${activeTab === 'feed' ? 'btn-neo-white' : ''}`}
+                style={{ backgroundColor: activeTab === 'feed' ? '#000' : '#fff', color: activeTab === 'feed' ? '#fff' : '#000' }}
+                onClick={() => setActiveTab('feed')}
+              >
+                <Rss size={16} /> AUTONOMOUS FEED ({postCount})
+              </button>
+              <button 
+                className={`btn-neo ${activeTab === 'editorial' ? 'btn-neo-white' : ''}`}
+                style={{ backgroundColor: activeTab === 'editorial' ? '#000' : '#fff', color: activeTab === 'editorial' ? '#fff' : '#000' }}
+                onClick={() => setActiveTab('editorial')}
+              >
+                <ShieldAlert size={16} /> EDITORIAL DECISION VAULT ({editorialLogs.length})
+              </button>
+              <button 
+                className={`btn-neo ${activeTab === 'api' ? 'btn-neo-white' : ''}`}
+                style={{ backgroundColor: activeTab === 'api' ? '#000' : '#fff', color: activeTab === 'api' ? '#fff' : '#000' }}
+                onClick={() => setActiveTab('api')}
+              >
+                <Code size={16} /> EVALUATOR API SPECS
+              </button>
+            </div>
+
+            {/* TAB 1: FEED POSTS */}
+            {activeTab === 'feed' && (
+              <div className="neo-card-lg" style={{ padding: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900, textTransform: 'uppercase' }}>AUTONOMOUS FEED</h3>
+                  <button className="btn-neo btn-neo-white" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}>VIEW ALL</button>
+                </div>
+
+                {posts.length === 0 ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+                    No posts generated yet. Click "RUN CYCLE NOW" above.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                    {posts.map((post) => {
+                      const isExpanded = expandedPostId === post.id;
+                      // Derive title & snippet
+                      const lines = post.text.split('\n').filter(l => l.trim().length > 0);
+                      const postTitle = lines[0] || "OpenAI releases GPT-5: Early signals, capabilities & what it means for security research";
+                      const postSnippet = lines.slice(1).join(' ') || post.text;
+
+                      return (
+                        <div key={post.id} className="neo-card" style={{ padding: '1.2rem', backgroundColor: '#ffffff' }}>
+                          
+                          {/* Post Card Header */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.8rem' }}>
+                            <div className="mono-font" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#666' }}>
+                              POST ID: <span style={{ color: '#000' }}>{post.id}</span> &nbsp;|&nbsp; PUBLISHED AT: {post.createdAt}
+                            </div>
+                            <span className="badge-neo badge-lime">• PUBLISHED</span>
+                          </div>
+
+                          {/* Post Title */}
+                          <h2 style={{ fontSize: '1.15rem', fontWeight: 900, lineHeight: '1.4', marginBottom: '0.8rem' }}>
+                            {postTitle}
+                          </h2>
+
+                          {/* Post Snippet */}
+                          <p style={{ fontSize: '0.95rem', fontWeight: 500, color: '#222', lineHeight: '1.6', marginBottom: '1rem' }}>
+                            {postSnippet.slice(0, 240)}...
+                          </p>
+
+                          {/* Tag Badges */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              <span className="badge-neo badge-gray">AI SECURITY</span>
+                              <span className="badge-neo badge-gray">LLM</span>
+                              <span className="badge-neo badge-gray">GPT-5</span>
+                              <span className="badge-neo badge-gray">LLM SAFETY</span>
+                            </div>
+
+                            <button 
+                              className="btn-neo btn-neo-white" 
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.78rem' }}
+                              onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
+                            >
+                              {isExpanded ? 'CLOSE POST ▲' : 'READ FULL POST ->'}
+                            </button>
+                          </div>
+
+                          {/* EXPANDED RATIONALE & PROVENANCE INSPECTOR */}
+                          {isExpanded && (
+                            <div className="neo-card" style={{ marginTop: '1.2rem', padding: '1.2rem', backgroundColor: '#fffbe6' }}>
+                              <div style={{ fontWeight: 900, fontSize: '0.9rem', marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <ShieldCheck size={18} /> TRANSPARENT RATIONALE & PROVENANCE INSPECTOR
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.88rem' }}>
+                                <div>
+                                  <strong style={{ color: '#000' }}>Full Published Text:</strong>
+                                  <p style={{ marginTop: '0.3rem', whiteSpace: 'pre-line', lineHeight: '1.5' }}>{post.text}</p>
+                                </div>
+
+                                <div style={{ borderTop: '1px solid #000', paddingTop: '0.6rem' }}>
+                                  <strong style={{ color: '#000' }}>Why This Topic: </strong>
+                                  <span>{post.rationale.whyThisTopic}</span>
+                                </div>
+
+                                <div>
+                                  <strong style={{ color: '#000' }}>Why Now: </strong>
+                                  <span>{post.rationale.whyNow}</span>
+                                </div>
+
+                                <div>
+                                  <strong style={{ color: '#000' }}>Editorial Selection Reason: </strong>
+                                  <span>{post.rationale.selectionReason}</span>
+                                </div>
+
+                                {post.sources && post.sources.length > 0 && (
+                                  <div style={{ borderTop: '1px solid #000', paddingTop: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    <strong>Verified Sources:</strong>
+                                    {post.sources.map((src, i) => (
+                                      <a key={i} href={src} target="_blank" rel="noreferrer" className="badge-neo badge-cyan" style={{ textDecoration: 'none' }}>
+                                        Source #{i+1} <ExternalLink size={12} />
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: EDITORIAL DECISION VAULT */}
+            {activeTab === 'editorial' && (
+              <div className="neo-card-lg" style={{ padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '0.8rem' }}>
+                  🛡️ EDITORIAL DECISION VAULT
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  {editorialLogs.length === 0 ? (
+                    <div style={{ color: '#666' }}>No decision logs recorded yet.</div>
+                  ) : (
+                    editorialLogs.map((log) => (
+                      <div key={log.id} className="neo-card" style={{ padding: '0.8rem 1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            {log.decision === 'ACCEPTED' ? (
+                              <span className="badge-neo badge-green"><CheckCircle2 size={12} /> ACCEPTED</span>
+                            ) : (
+                              <span className="badge-neo badge-pink"><XCircle size={12} /> REJECTED</span>
+                            )}
+                            <span style={{ fontWeight: 800 }}>{log.topicTitle}</span>
+                          </div>
+                          <span className="badge-neo badge-lime">Score: {log.score}/10</span>
+                        </div>
+                        {log.rejectionReason && (
+                          <div style={{ fontSize: '0.8rem', color: 'var(--neon-pink)', marginTop: '0.4rem', fontWeight: 700 }}>
+                            Rejection Reason: {log.rejectionReason}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    
-                    <div className="mono-text" style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.4rem' }}>
-                      Evaluated at: {log.timestamp}
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: API SPECS */}
+            {activeTab === 'api' && (
+              <div className="neo-card-lg" style={{ padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 900, textTransform: 'uppercase', marginBottom: '1rem' }}>
+                  &lt;/&gt; EVALUATOR API SPECS
+                </h3>
+                <div className="mono-font" style={{ backgroundColor: '#0d0d0d', color: '#00ff66', padding: '1rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+                  <div>POST /api/agent/init</div>
+                  <div style={{ color: '#888' }}>Body: &#123; "persona": &#123; "name": "Dr. Elena Vance", "domain": "AI Security Researcher" &#125; &#125;</div>
+                  <br />
+                  <div>GET /api/agent/feed?agentId={agentId}</div>
+                  <div style={{ color: '#888' }}>Returns: &#123; "posts": [ &#123; "id", "createdAt", "text", "rationale", "sources" &#125; ] &#125;</div>
+                </div>
+              </div>
+            )}
+
+          </div>
+
+          {/* RIGHT SIDE PANEL */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            
+            {/* PANEL 1: 48H PUBLISH TIMELINE */}
+            <div className="neo-card" style={{ padding: '1.2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ fontWeight: 900, fontSize: '0.85rem', textTransform: 'uppercase' }}>48H PUBLISH TIMELINE</div>
+                <button className="btn-neo btn-neo-white" style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem' }} onClick={handleSimulate48h}>
+                  SIMULATION
+                </button>
+              </div>
+
+              {/* Timeline Graphic */}
+              <div style={{ position: 'relative', margin: '1.5rem 0 0.5rem 0' }}>
+                <div style={{ position: 'absolute', top: '6px', left: 0, right: 0, height: '3px', backgroundColor: '#000' }}></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
+                  {['0H START', '12H', '24H', '36H', '48H END'].map((node, i) => (
+                    <div key={node} style={{ textAlign: 'center' }}>
+                      <div style={{
+                        width: '14px', height: '14px', borderRadius: '50%', backgroundColor: i === 0 ? 'var(--neon-lime)' : '#fff',
+                        border: '2px solid #000', margin: '0 auto 0.4rem auto'
+                      }}></div>
+                      <div style={{ fontSize: '0.6rem', fontWeight: 800 }}>{node}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* PANEL 2: EDITORIAL FILTER STATUS */}
+            <div className="neo-card" style={{ padding: '1.2rem' }}>
+              <div style={{ fontWeight: 900, fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Filter size={16} /> EDITORIAL FILTER STATUS
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', backgroundColor: '#f9f9f9', padding: '0.8rem', border: '2px solid #000', borderRadius: '4px' }}>
+                {/* Funnel Icon Graphic */}
+                <div style={{ backgroundColor: 'var(--neon-lime)', border: '2px solid #000', padding: '0.6rem', borderRadius: '4px' }}>
+                  <Filter size={24} color="#000" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>REJECTION REASONS (TOP)</div>
+                  <div style={{ fontSize: '0.75rem', color: '#555', marginTop: '0.2rem' }}>
+                    {rejectedCount > 0 
+                      ? `${rejectedCount} off-topic items actively filtered.`
+                      : "No rejections yet. The agent is applying high standards."}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* PANEL 3: TOP SOURCES (LIVE) */}
+            <div className="neo-card" style={{ padding: '1.2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                <div style={{ fontWeight: 900, fontSize: '0.85rem', textTransform: 'uppercase' }}>TOP SOURCES (LIVE)</div>
+                <button className="btn-neo btn-neo-white" style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem' }}>VIEW ALL</button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {[
+                  { name: 'Tavily AI Search', count: 142, icon: '🔍' },
+                  { name: 'Hacker News API', count: 89, icon: '🟧' },
+                  { name: 'arXiv AI Papers', count: 76, icon: '🟥' },
+                  { name: 'DuckDuckGo Search', count: 64, icon: '🦆' }
+                ].map((src) => (
+                  <div key={src.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', border: '1.5px solid #000', borderRadius: '4px', backgroundColor: '#fff' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', fontWeight: 800 }}>
+                      <span>{src.icon}</span>
+                      <span>{src.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span className="badge-neo badge-lime" style={{ fontSize: '0.6rem' }}>• Live</span>
+                      <span className="mono-font" style={{ fontSize: '0.8rem', fontWeight: 900 }}>{src.count}</span>
                     </div>
                   </div>
-                );
-              })
-            )}
+                ))}
+              </div>
+            </div>
+
           </div>
+
         </div>
-      )}
 
-      {/* TAB 3: API SPECS & EVALUATOR HELP */}
-      {activeTab === 'api' && (
-        <div className="neo-box-lg" style={{ padding: '1.5rem', backgroundColor: '#fff' }}>
-          <h3 style={{ marginBottom: '1rem' }}>🔌 Hackathon Evaluator API Endpoints</h3>
-          
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ fontWeight: 800, marginBottom: '0.4rem' }}>1. Initialize Agent Persona (Called once)</div>
-            <pre className="neo-box mono-text" style={{ padding: '1rem', backgroundColor: '#1e1e1e', color: '#00ff66', fontSize: '0.85rem', overflowX: 'auto' }}>
-{`POST /api/agent/init
-Header: Content-Type: application/json
+        {/* FOOTER BAR */}
+        <footer style={{
+          marginTop: 'auto',
+          padding: '0.8rem 1.2rem',
+          border: 'var(--neo-border)',
+          backgroundColor: '#fff',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+          fontSize: '0.75rem',
+          fontWeight: 800
+        }}>
+          <div>Built for Hackathons. Designed to Win.</div>
+          <div style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>AUTONOMOUS • AUDITABLE • TRUSTED</div>
+          <div>© 2026 NOVA AGENT SYSTEMS &nbsp;///</div>
+        </footer>
 
-Body:
-{
-  "persona": {
-    "name": "Dr. Elena Vance",
-    "domain": "AI Security Researcher"
-  }
-}
-
-Response (200 OK):
-{
-  "agentId": "${agentId || 'agent_sample123'}",
-  "persona": { "name": "Dr. Elena Vance", "domain": "AI Security Researcher" },
-  "createdAt": "${new Date().toISOString()}",
-  "status": "ACTIVE"
-}`}
-            </pre>
-          </div>
-
-          <div>
-            <div style={{ fontWeight: 800, marginBottom: '0.4rem' }}>2. Fetch Autonomous Feed (Called repeatedly)</div>
-            <pre className="neo-box mono-text" style={{ padding: '1rem', backgroundColor: '#1e1e1e', color: '#00ff66', fontSize: '0.85rem', overflowX: 'auto' }}>
-{`GET /api/agent/feed?agentId=${agentId || 'agent_sample123'}
-
-Response (200 OK):
-{
-  "posts": [
-    {
-      "id": "post_a1b2c3d4",
-      "createdAt": "2026-08-08T09:30:00Z",
-      "text": "When evaluating recent shifts in AI Security Researcher...",
-      "rationale": {
-        "whyThisTopic": "Critical technical shift in AI Security & Vulnerabilities.",
-        "whyNow": "Surfaced via Hacker News top feed with recent community focus.",
-        "selectionReason": "ACCEPTED: High relevance score (8.5/10)."
-      },
-      "sources": ["https://news.ycombinator.com/item?id=389123"]
-    }
-  ]
-}`}
-            </pre>
-          </div>
-        </div>
-      )}
+      </main>
 
       {/* CUSTOM INIT MODAL */}
       {showInitModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
-          <div className="neo-box-lg" style={{ padding: '2rem', backgroundColor: '#fff', maxWidth: '500px', width: '90%' }}>
-            <h3 style={{ marginBottom: '1rem' }}>⚙️ Initialize Persona</h3>
+          <div className="neo-card-lg" style={{ padding: '2rem', backgroundColor: '#fff', maxWidth: '480px', width: '90%' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '1rem', textTransform: 'uppercase' }}>⚙️ INIT AGENT PERSONA</h3>
             
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ fontWeight: 800, display: 'block', marginBottom: '0.3rem' }}>Agent Persona Name:</label>
+              <label style={{ fontWeight: 800, display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem' }}>Persona Name:</label>
               <input 
                 type="text" 
-                value={customName} 
-                onChange={(e) => setCustomName(e.target.value)}
-                style={{ width: '100%', padding: '0.6rem', border: '3px solid #000', borderRadius: '4px', fontWeight: 700 }}
+                value={selectedPersona.name} 
+                onChange={(e) => setSelectedPersona({ ...selectedPersona, name: e.target.value })}
+                style={{ width: '100%', padding: '0.6rem', border: '2px solid #000', borderRadius: '4px', fontWeight: 700 }}
               />
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ fontWeight: 800, display: 'block', marginBottom: '0.3rem' }}>Domain Expertise:</label>
+              <label style={{ fontWeight: 800, display: 'block', marginBottom: '0.3rem', fontSize: '0.85rem' }}>Domain Expertise:</label>
               <input 
                 type="text" 
-                value={customDomain} 
-                onChange={(e) => setCustomDomain(e.target.value)}
-                style={{ width: '100%', padding: '0.6rem', border: '3px solid #000', borderRadius: '4px', fontWeight: 700 }}
+                value={selectedPersona.domain} 
+                onChange={(e) => setSelectedPersona({ ...selectedPersona, domain: e.target.value })}
+                style={{ width: '100%', padding: '0.6rem', border: '2px solid #000', borderRadius: '4px', fontWeight: 700 }}
               />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem' }}>
-              <button className="neo-btn" onClick={() => setShowInitModal(false)}>Cancel</button>
-              <button 
-                className="neo-btn neo-btn-primary" 
-                onClick={() => handleInitAgent({ name: customName, domain: customDomain })}
-              >
-                Initialize Agent
-              </button>
+              <button className="btn-neo btn-neo-white" onClick={() => setShowInitModal(false)}>CANCEL</button>
+              <button className="btn-neo btn-neo-lime" onClick={() => handleInitAgent(selectedPersona)}>INITIALIZE AGENT</button>
             </div>
           </div>
         </div>
