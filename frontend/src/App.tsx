@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Rss, ShieldAlert, Globe, Clock, Box, Settings, Code,
   Play, Sparkles, Copy, Check, ExternalLink, Activity, Filter, ChevronLeft, ChevronRight,
   TrendingUp, CheckCircle2, XCircle, ShieldCheck, Heart, Repeat, Share2,
-  Database, Zap
+  Database, Zap, Menu, X
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8000';
@@ -114,6 +114,7 @@ export function App() {
   const [sliderIndex, setSliderIndex] = useState<number>(0);
   const [feedPageIndex, setFeedPageIndex] = useState<number>(0);
   const [showAllFeed, setShowAllFeed] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   const handlePrevFeedPage = () => {
     setFeedPageIndex(prev => (prev > 0 ? prev - 1 : posts.length - 1));
@@ -302,62 +303,91 @@ export function App() {
 
   return (
     <div className="nova-app-container">
+
+      {/* Mobile Dark Overlay Backdrop */}
+      <div 
+        className={`mobile-overlay ${isMobileMenuOpen ? 'mobile-open' : ''}`} 
+        onClick={() => setIsMobileMenuOpen(false)} 
+      />
+
+      {/* Mobile Top Header Bar with Hamburger Button */}
+      <div className="mobile-top-nav">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div className="nova-brand-title" style={{ fontSize: '1rem', padding: '0.15rem 0.5rem', letterSpacing: '1px' }}>ELEVEXA</div>
+          <span className="badge-neo badge-lime" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem' }}>• LIVE</span>
+        </div>
+        <button 
+          className="btn-neo btn-neo-white" 
+          style={{ padding: '0.35rem 0.6rem' }}
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
       
-      {/* 1. LEFT SIDEBAR */}
-      <aside className="nova-sidebar">
+      {/* 1. LEFT SIDEBAR (Desktop Sticky & Mobile Slide Drawer) */}
+      <aside className={`nova-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div>
           {/* Logo Branding */}
-          <div className="nova-brand-logo">
+          <div className="nova-brand-logo" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="nova-brand-title" style={{ fontSize: '1.2rem', letterSpacing: '1px' }}>ELEVEXA</div>
+            {isMobileMenuOpen && (
+              <button 
+                style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            )}
           </div>
 
           {/* Navigation Links */}
           <ul className="nova-nav-list">
             <li 
               className={`nova-nav-item ${activeNav === 'DASHBOARD' ? 'active' : ''}`}
-              onClick={() => { setActiveNav('DASHBOARD'); setActiveTab('feed'); }}
+              onClick={() => { setActiveNav('DASHBOARD'); setActiveTab('feed'); setIsMobileMenuOpen(false); }}
             >
               <LayoutDashboard size={18} /> DASHBOARD
             </li>
             <li 
               className={`nova-nav-item ${activeNav === 'FEED' ? 'active' : ''}`}
-              onClick={() => setActiveNav('FEED')}
+              onClick={() => { setActiveNav('FEED'); setIsMobileMenuOpen(false); }}
             >
               <Rss size={18} /> SIMULATED FEED
             </li>
             <li 
               className={`nova-nav-item ${activeNav === 'DECISIONS' ? 'active' : ''}`}
-              onClick={() => setActiveNav('DECISIONS')}
+              onClick={() => { setActiveNav('DECISIONS'); setIsMobileMenuOpen(false); }}
             >
               <Filter size={18} /> DECISIONS
             </li>
             <li 
               className={`nova-nav-item ${activeNav === 'SOURCES' ? 'active' : ''}`}
-              onClick={() => setActiveNav('SOURCES')}
+              onClick={() => { setActiveNav('SOURCES'); setIsMobileMenuOpen(false); }}
             >
               <Globe size={18} /> SOURCES
             </li>
             <li 
               className={`nova-nav-item ${activeNav === 'TIMELINE' ? 'active' : ''}`}
-              onClick={() => setActiveNav('TIMELINE')}
+              onClick={() => { setActiveNav('TIMELINE'); setIsMobileMenuOpen(false); }}
             >
               <Clock size={18} /> TIMELINE
             </li>
             <li 
               className={`nova-nav-item ${activeNav === 'VAULT' ? 'active' : ''}`}
-              onClick={() => setActiveNav('VAULT')}
+              onClick={() => { setActiveNav('VAULT'); setIsMobileMenuOpen(false); }}
             >
               <Box size={18} /> VAULT
             </li>
             <li 
               className={`nova-nav-item ${activeNav === 'SETTINGS' ? 'active' : ''}`}
-              onClick={() => setActiveNav('SETTINGS')}
+              onClick={() => { setActiveNav('SETTINGS'); setIsMobileMenuOpen(false); }}
             >
               <Settings size={18} /> SETTINGS
             </li>
             <li 
               className={`nova-nav-item ${activeNav === 'API' ? 'active' : ''}`}
-              onClick={() => { setActiveNav('API'); setActiveTab('api'); }}
+              onClick={() => { setActiveNav('API'); setActiveTab('api'); setIsMobileMenuOpen(false); }}
             >
               <Code size={18} /> &lt;/&gt; API DOCS
             </li>
