@@ -308,7 +308,7 @@ export function App() {
         <div>
           {/* Logo Branding */}
           <div className="nova-brand-logo">
-            <div className="nova-brand-title">NOVA</div>
+            <div className="nova-brand-title" style={{ fontSize: '1.2rem', letterSpacing: '1px' }}>ELEVEXA</div>
           </div>
 
           {/* Navigation Links */}
