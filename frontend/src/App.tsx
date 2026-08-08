@@ -313,7 +313,7 @@ export function App() {
       {/* Mobile Top Header Bar with Hamburger Button */}
       <div className="mobile-top-nav">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <img src="/elevexa_logo_transparent.png" alt="Elevexa Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+          <img src="/elevexa_logo_transparent.png" alt="Elevexa Logo" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
           <span className="badge-neo badge-lime" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem' }}>• LIVE</span>
         </div>
         <button 
@@ -329,11 +329,11 @@ export function App() {
       <aside className={`nova-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div>
           {/* Logo Branding */}
-          <div className="nova-brand-logo" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '1.8rem', padding: '0.4rem 0' }}>
+          <div className="nova-brand-logo" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '0.8rem', padding: '0.2rem 0' }}>
             <img 
               src="/elevexa_logo_transparent.png" 
               alt="Elevexa Logo" 
-              style={{ width: '100%', maxWidth: '195px', height: 'auto', display: 'block', objectFit: 'contain' }} 
+              style={{ height: '34px', width: 'auto', maxWidth: '150px', display: 'block', objectFit: 'contain' }} 
             />
             {isMobileMenuOpen && (
               <button 

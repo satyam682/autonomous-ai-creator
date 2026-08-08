@@ -59,7 +59,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 1.2rem 1rem;
+  padding: 1rem 0.8rem;
   z-index: 100;
   overflow-y: auto;
   transition: transform 0.25s ease-in-out;
@@ -67,7 +67,7 @@ body {
 
 .nova-brand-logo {
   padding: 0.2rem 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.8rem;
   display: flex;
   align-items: center;
 }
@@ -87,7 +87,7 @@ body {
 .nova-nav-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.25rem;
   list-style: none;
 }
 
@@ -95,9 +95,9 @@ body {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  padding: 0.7rem 0.9rem;
+  padding: 0.6rem 0.8rem;
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   color: #8a8f98;
