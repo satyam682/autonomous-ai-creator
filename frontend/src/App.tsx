@@ -363,6 +363,44 @@ export function App() {
             </li>
           </ul>
         </div>
+
+        {/* ACTIVE PERSONA SIDEBAR CARD WIDGET */}
+        <div style={{
+          backgroundColor: 'var(--neon-lime)',
+          border: '2.5px solid #000',
+          boxShadow: '3px 3px 0px #000',
+          borderRadius: '6px',
+          padding: '0.65rem 0.8rem',
+          color: '#000',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.7rem',
+          marginTop: '1rem'
+        }}>
+          <img 
+            src={currentPersona?.avatar || '/avatars/elena.png'} 
+            alt={currentPersona?.name}
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '4px',
+              border: '2px solid #000',
+              objectFit: 'cover',
+              backgroundColor: '#fff'
+            }}
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 900, fontSize: '0.78rem', textTransform: 'uppercase', lineHeight: '1.2' }}>
+              {currentPersona?.name}
+            </div>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#222', margin: '0.1rem 0 0.3rem 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {currentPersona?.domain}
+            </div>
+            <span className="badge-neo badge-green" style={{ fontSize: '0.55rem', padding: '0.15rem 0.4rem', backgroundColor: '#00e676', color: '#000' }}>
+              • ACTIVE
+            </span>
+          </div>
+        </div>
       </aside>
 
       {/* 2. MAIN DASHBOARD CONTENT AREA */}
