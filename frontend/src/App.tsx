@@ -363,29 +363,6 @@ export function App() {
             </li>
           </ul>
         </div>
-
-        {/* Sidebar Uptime Footer Card */}
-        <div style={{
-          backgroundColor: '#16181a',
-          border: '2px solid #333',
-          padding: '0.8rem',
-          borderRadius: '4px'
-        }}>
-          <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#888', textTransform: 'uppercase' }}>
-            AGENT UPTIME
-          </div>
-          <div className="mono-font" style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', margin: '0.2rem 0' }}>
-            12h 37m 22s
-          </div>
-          <div style={{ height: '18px', width: '100%', margin: '0.3rem 0' }}>
-            <svg width="100%" height="18" viewBox="0 0 100 18">
-              <path d="M0 12 L20 14 L40 6 L60 10 L80 4 L100 8" fill="none" stroke="var(--neon-lime)" strokeWidth="2" />
-            </svg>
-          </div>
-          <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>
-            SINCE LAST INIT
-          </div>
-        </div>
       </aside>
 
       {/* 2. MAIN DASHBOARD CONTENT AREA */}
