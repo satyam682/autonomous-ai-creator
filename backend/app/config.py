@@ -10,9 +10,9 @@ class Settings:
     PROJECT_NAME: str = "Autonomous AI Creator Engine"
     VERSION: str = "1.0.0"
     
-    # Breeth Memory Cloud Configuration
+    # Breeth Memory Cloud Configuration (Official API: https://api.thebreeth.com)
     BREETH_API_KEY: str = os.getenv("BREETH_API_KEY", "")
-    BREETH_API_URL: str = os.getenv("BREETH_API_URL", "https://api.breeth.ai")
+    BREETH_API_URL: str = os.getenv("BREETH_API_URL", "https://api.thebreeth.com")
     
     # Cohere AI LLM Configuration
     COHERE_API_KEY: str = os.getenv("COHERE_API_KEY", "")

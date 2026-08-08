@@ -28,13 +28,9 @@ class AgentState(TypedDict):
 
 async def discover_node(state: AgentState) -> Dict[str, Any]:
     """Node 1: Multi-source Live Topic Discovery."""
-    agent_id = state["agent_id"]
     domain = state["persona_domain"]
     logger.info(f"[LangGraph Node: Discover] Discovering live topics for domain: {domain}")
     
-    # Log INTENT event to Breeth Cloud
-    await breeth_client.log_intent(agent_id, f"Discover & Curate {domain} Topics", domain)
-
     candidates = await discovery_engine.discover_topics(domain)
     random.shuffle(candidates)
     return {"discovered_candidates": candidates, "status": "DISCOVERED"}
@@ -48,8 +44,8 @@ async def judge_node(state: AgentState) -> Dict[str, Any]:
     
     logger.info(f"[LangGraph Node: Judge] Evaluating {len(candidates)} candidate topics for {domain}...")
     
-    # Log RETRIEVAL event to Breeth Cloud
-    await breeth_client.log_retrieval(agent_id, f"Query deduplication memory for {domain}")
+    # Query official Breeth Cloud Memory Search API (/v1/search) -> Increments RETRIEVALS & INTENTS
+    await breeth_client.search_memory_retrieval(f"What topics has {name} published in {domain}?", limit=5)
 
     accepted_topic = None
     selection_reason = ""
@@ -125,20 +121,11 @@ async def store_node(state: AgentState) -> Dict[str, Any]:
         custom_created_at=state.get("custom_created_at")
     )
 
-    # Sync WRITE and KNOT events to Breeth Cloud Dashboard!
-    await breeth_client.log_write(
-        agent_id=agent_id,
-        text=saved_post["text"],
-        metadata={
-            "post_id": saved_post["id"],
-            "rationale": saved_post["rationale"],
-            "sources": saved_post["sources"]
-        }
-    )
-    await breeth_client.log_knot(
-        agent_id=agent_id,
-        knot_title=saved_post["text"][:50],
-        tags=state.get("keywords", [])
+    # Send POST to official Breeth Cloud Episodes API (/v1/episodes) -> Increments WRITES & KNOTS
+    await breeth_client.log_episode_write(
+        topic_title=post_data["whyThisTopic"],
+        post_text=post_data["text"],
+        persona_name=state["persona_name"]
     )
 
     return {"saved_post": saved_post, "status": "STORED_AND_COMPLETED"}
