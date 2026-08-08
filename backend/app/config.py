@@ -10,7 +10,11 @@ class Settings:
     PROJECT_NAME: str = "Autonomous AI Creator Engine"
     VERSION: str = "1.0.0"
     
-    # API Keys
+    # Breeth Memory Cloud Configuration
+    BREETH_API_KEY: str = os.getenv("BREETH_API_KEY", "")
+    BREETH_API_URL: str = os.getenv("BREETH_API_URL", "https://api.breeth.ai")
+    
+    # LLM API Keys
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
     
@@ -22,7 +26,6 @@ class Settings:
     DB_PATH: str = os.getenv("DB_PATH", str(BASE_DIR / "agent_memory.db"))
     
     # Autonomous Cadence Settings
-    # 48 hours = 2880 minutes. 1 post every 180 mins (3 hours) = 16 high quality posts over 48h
     DEFAULT_INTERVAL_MINUTES: int = int(os.getenv("PUBLISH_INTERVAL_MINUTES", "180"))
     
     # Host settings

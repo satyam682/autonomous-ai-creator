@@ -6,6 +6,7 @@ from app.agent.discovery import discovery_engine
 from app.agent.evaluator import evaluator
 from app.agent.generator import post_generator
 from app.agent.memory import db_memory
+from app.agent.breeth import breeth_client
 
 logger = logging.getLogger("agent_graph")
 
@@ -27,10 +28,14 @@ class AgentState(TypedDict):
 
 async def discover_node(state: AgentState) -> Dict[str, Any]:
     """Node 1: Multi-source Live Topic Discovery."""
+    agent_id = state["agent_id"]
     domain = state["persona_domain"]
     logger.info(f"[LangGraph Node: Discover] Discovering live topics for domain: {domain}")
+    
+    # Log INTENT event to Breeth Cloud
+    await breeth_client.log_intent(agent_id, f"Discover & Curate {domain} Topics", domain)
+
     candidates = await discovery_engine.discover_topics(domain)
-    # Shuffle slightly to ensure variety across rapid triggers
     random.shuffle(candidates)
     return {"discovered_candidates": candidates, "status": "DISCOVERED"}
 
@@ -43,6 +48,9 @@ async def judge_node(state: AgentState) -> Dict[str, Any]:
     
     logger.info(f"[LangGraph Node: Judge] Evaluating {len(candidates)} candidate topics for {domain}...")
     
+    # Log RETRIEVAL event to Breeth Cloud
+    await breeth_client.log_retrieval(agent_id, f"Query deduplication memory for {domain}")
+
     accepted_topic = None
     selection_reason = ""
     keywords = []
@@ -60,7 +68,7 @@ async def judge_node(state: AgentState) -> Dict[str, Any]:
             keywords = candidate_keywords
             break
 
-    # If all candidates rejected or duplicated, pick from guaranteed unique fallback pool
+    # If all candidates rejected, pick from guaranteed unique fallback pool
     if not accepted_topic:
         fallbacks = discovery_engine.get_fallback_topics(domain)
         for fb in fallbacks:
@@ -99,6 +107,7 @@ async def generate_node(state: AgentState) -> Dict[str, Any]:
 
 async def store_node(state: AgentState) -> Dict[str, Any]:
     """Node 4: Persistent Memory Write & Deduplication Indexing."""
+    agent_id = state["agent_id"]
     post_data = state.get("generated_post")
     if not post_data:
         return {"status": "NO_POST_TO_STORE"}
@@ -106,7 +115,7 @@ async def store_node(state: AgentState) -> Dict[str, Any]:
     logger.info(f"[LangGraph Node: Store] Saving unique post to SQLite memory store...")
     
     saved_post = db_memory.save_post(
-        agent_id=state["agent_id"],
+        agent_id=agent_id,
         text=post_data["text"],
         why_this_topic=post_data["whyThisTopic"],
         why_now=post_data["whyNow"],
@@ -115,7 +124,23 @@ async def store_node(state: AgentState) -> Dict[str, Any]:
         keywords=state.get("keywords", []),
         custom_created_at=state.get("custom_created_at")
     )
-    
+
+    # Sync WRITE and KNOT events to Breeth Cloud Dashboard!
+    await breeth_client.log_write(
+        agent_id=agent_id,
+        text=saved_post["text"],
+        metadata={
+            "post_id": saved_post["id"],
+            "rationale": saved_post["rationale"],
+            "sources": saved_post["sources"]
+        }
+    )
+    await breeth_client.log_knot(
+        agent_id=agent_id,
+        knot_title=saved_post["text"][:50],
+        tags=state.get("keywords", [])
+    )
+
     return {"saved_post": saved_post, "status": "STORED_AND_COMPLETED"}
 
 # --- Graph Routing Logic ---
@@ -130,13 +155,11 @@ def should_generate(state: AgentState) -> str:
 def build_agent_graph():
     workflow = StateGraph(AgentState)
 
-    # Add Nodes
     workflow.add_node("discover", discover_node)
     workflow.add_node("judge", judge_node)
     workflow.add_node("generate", generate_node)
     workflow.add_node("store", store_node)
 
-    # Define Edges
     workflow.set_entry_point("discover")
     workflow.add_edge("discover", "judge")
     
