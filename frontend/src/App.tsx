@@ -313,6 +313,7 @@ export function App() {
       {/* Mobile Top Header Bar with Hamburger Button */}
       <div className="mobile-top-nav">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <img src="/elevexa_logo_dark.png" alt="Elevexa Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
           <div className="nova-brand-title" style={{ fontSize: '1rem', padding: '0.15rem 0.5rem', letterSpacing: '1px' }}>ELEVEXA</div>
           <span className="badge-neo badge-lime" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem' }}>• LIVE</span>
         </div>
@@ -329,8 +330,11 @@ export function App() {
       <aside className={`nova-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div>
           {/* Logo Branding */}
-          <div className="nova-brand-logo" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div className="nova-brand-title" style={{ fontSize: '1.2rem', letterSpacing: '1px' }}>ELEVEXA</div>
+          <div className="nova-brand-logo" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <img src="/elevexa_logo_dark.png" alt="Elevexa Logo" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+              <div className="nova-brand-title" style={{ fontSize: '1.15rem', letterSpacing: '1px' }}>ELEVEXA</div>
+            </div>
             {isMobileMenuOpen && (
               <button 
                 style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}
