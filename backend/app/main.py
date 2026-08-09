@@ -80,6 +80,11 @@ async def get_agent_feed(agentId: Optional[str] = Query(None, description="The a
     Called repeatedly by evaluators. Returns posts sorted newest first.
     """
     target_agent_id = agentId
+    if target_agent_id:
+        agent = db_memory.get_agent(target_agent_id)
+        if not agent:
+            target_agent_id = None
+
     if not target_agent_id:
         latest = db_memory.get_latest_agent()
         if latest:

@@ -182,7 +182,7 @@ export function App() {
       if (statusRes.ok) {
         const statusData = await statusRes.json();
         setStatus(statusData);
-        if (!agentId && statusData.agentId) {
+        if (statusData.agentId && statusData.agentId !== agentId) {
           setAgentId(statusData.agentId);
         }
       }
