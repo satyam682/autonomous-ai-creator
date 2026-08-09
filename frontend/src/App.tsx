@@ -6,7 +6,8 @@ import {
   Database, Zap, Menu, X
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? window.location.origin : 'http://localhost:8000');
 
 interface Persona {
   name: string;
