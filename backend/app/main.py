@@ -99,16 +99,20 @@ async def get_agent_feed(agentId: Optional[str] = Query(None, description="The a
 @app.get("/api/agent/status", response_model=AgentStatusResponse)
 async def get_agent_status(agentId: Optional[str] = Query(None)):
     target_agent_id = agentId
-    if not target_agent_id:
+    agent = db_memory.get_agent(target_agent_id) if target_agent_id else None
+
+    if not agent:
         latest = db_memory.get_latest_agent()
         if latest:
+            agent = latest
             target_agent_id = latest["agentId"]
         else:
-            raise HTTPException(status_code=404, detail="No agent initialized yet.")
-
-    agent = db_memory.get_agent(target_agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found.")
+            # Auto-initialize default persona if DB is fresh
+            init_res = await init_agent(InitAgentRequest(
+                persona={"name": "Dr. Elena Vance", "domain": "AI Security Researcher"}
+            ))
+            target_agent_id = init_res.agentId
+            agent = db_memory.get_agent(target_agent_id)
 
     feed = db_memory.get_feed(target_agent_id)
     logs = db_memory.get_editorial_logs(target_agent_id, limit=50)
@@ -146,12 +150,17 @@ async def get_editorial_logs(agentId: Optional[str] = Query(None), limit: int = 
 @app.post("/api/agent/trigger-cycle")
 async def trigger_cycle(agentId: Optional[str] = Query(None)):
     target_id = agentId
-    if not target_id:
+    agent = db_memory.get_agent(target_id) if target_id else None
+
+    if not agent:
         latest = db_memory.get_latest_agent()
         if latest:
             target_id = latest["agentId"]
         else:
-            raise HTTPException(status_code=404, detail="No agent initialized.")
+            init_res = await init_agent(InitAgentRequest(
+                persona={"name": "Dr. Elena Vance", "domain": "AI Security Researcher"}
+            ))
+            target_id = init_res.agentId
             
     post = await agent_scheduler.run_publishing_cycle(target_id)
     if not post:
