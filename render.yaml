@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: elevexa-autonomous-creator
+    env: python
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: BREETH_API_KEY
+        value: ck_live_6uN6aPr_hskvcXNjUvqfnc9GruWOCDB9EAj8-bSEWd0
+      - key: COHERE_API_KEY
+        value: cohere_z7kmuhS8J5eVryQQvjLd5WfWXe3Zzs4ZdpPapFlv2d4fp6
+      - key: COHERE_MODEL
+        value: command-a-03-2025
+      - key: TAVILY_API_KEY
+        value: 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
